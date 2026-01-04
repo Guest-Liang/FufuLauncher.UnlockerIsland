@@ -32,6 +32,8 @@ struct SimpleConfig {
 HANDLE g_hMapFile = NULL;
 IslandEnvironment* g_pEnv = NULL;
 
+// --- 日志与辅助函数 ---
+
 std::wstring GetLogFilePath() {
     wchar_t modulePath[MAX_PATH];
     if (GetModuleFileNameW(nullptr, modulePath, MAX_PATH) == 0) return L"Launcher.log";
@@ -158,6 +160,7 @@ std::wstring PrepareSafeDll(const std::wstring& originalDllPath) {
     }
     
     if (!MoveFileExW(targetPath.c_str(), NULL, MOVEFILE_DELAY_UNTIL_REBOOT)) {
+        // Ignored
     }
 
     WriteLog("已生成安全副本: " + std::string(targetPath.begin(), targetPath.end()));
@@ -225,6 +228,8 @@ void SyncSharedMemory() {
     }
 }
 
+// --- DLL 路径获取 ---
+
 std::wstring GetNvHelperPath() {
     wchar_t modulePath[MAX_PATH];
     if (GetModuleFileNameW(nullptr, modulePath, MAX_PATH) == 0) return L"";
@@ -232,6 +237,16 @@ std::wstring GetNvHelperPath() {
     size_t lastSlash = moduleDir.find_last_of(L"\\/");
     if (lastSlash == std::wstring::npos) return L"";
     return moduleDir.substr(0, lastSlash) + L"\\nvhelper.dll";
+}
+
+// 新增：获取 Genshin.UnlockerIsland.API.dll 路径
+std::wstring GetUnlockerApiDllPath() {
+    wchar_t modulePath[MAX_PATH];
+    if (GetModuleFileNameW(nullptr, modulePath, MAX_PATH) == 0) return L"";
+    std::wstring moduleDir = modulePath;
+    size_t lastSlash = moduleDir.find_last_of(L"\\/");
+    if (lastSlash == std::wstring::npos) return L"";
+    return moduleDir.substr(0, lastSlash) + L"\\Genshin.UnlockerIsland.API.dll";
 }
 
 std::wstring GetInputHotSwitchDllPath() {
@@ -271,6 +286,8 @@ bool InjectDll(HANDLE hProcess, const std::wstring& dllPath) {
     return exitCode != 0;
 }
 
+// --- 递归插件加载逻辑 ---
+
 void RecursiveScanAndInject(HANDLE hProcess, const std::wstring& directory, int& injectedCount) {
     std::wstring searchPath = directory + L"\\*";
     WIN32_FIND_DATAW findData;
@@ -285,6 +302,7 @@ void RecursiveScanAndInject(HANDLE hProcess, const std::wstring& directory, int&
         std::wstring fullPath = directory + L"\\" + findData.cFileName;
 
         if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            // 递归进入子文件夹
             RecursiveScanAndInject(hProcess, fullPath, injectedCount);
         } else {
             size_t nameLen = wcslen(findData.cFileName);
@@ -295,7 +313,8 @@ void RecursiveScanAndInject(HANDLE hProcess, const std::wstring& directory, int&
                     std::string sFileName(wFileName.begin(), wFileName.end());
 
                     WriteLog("发现插件: " + sFileName + ", 直接注入(无需Temp)...");
-                    
+
+                    // 插件直接注入，不使用 PrepareSafeDll
                     if (InjectDll(hProcess, fullPath)) {
                         WriteLog("插件注入成功: " + sFileName);
                         injectedCount++;
@@ -321,9 +340,7 @@ void InjectPlugins(HANDLE hProcess) {
     
     std::wstring pluginsDir = moduleDir.substr(0, lastSlash) + L"\\" + PLUGINS_SUBDIR_NAME;
 
-    if (GetFileAttributesW(pluginsDir.c_str()) == INVALID_FILE_ATTRIBUTES) {
-        return;
-    }
+    if (GetFileAttributesW(pluginsDir.c_str()) == INVALID_FILE_ATTRIBUTES) return;
 
     WriteLog("正在递归扫描插件目录: " + std::string(pluginsDir.begin(), pluginsDir.end()));
     
@@ -390,6 +407,7 @@ extern "C" {
 
         bool injectionSuccess = true;
 
+        // 1. 注入 NvHelper
         std::wstring nvPath = GetNvHelperPath();
         if (!nvPath.empty() && PathFileExistsW(nvPath.c_str())) {
             WriteLog("注入 NvHelper...");
@@ -397,28 +415,48 @@ extern "C" {
                 WriteLog("警告: NvHelper 注入失败");
             }
         }
-        
-        if (dllPath && wcslen(dllPath) > 0) {
-            WriteLog("准备安全DLL副本...");
-            
-            std::wstring safeDllPath = PrepareSafeDll(dllPath);
 
+        // 2. 注入外部传入的 DLL (如果有)
+        if (dllPath && wcslen(dllPath) > 0) {
+            WriteLog("准备注入外部指定的DLL...");
+            std::wstring safeDllPath = PrepareSafeDll(dllPath);
             if (safeDllPath.empty()) {
-                WriteLog("致命错误: DLL安全处理失败");
+                WriteLog("致命错误: 外部DLL安全处理失败");
                 injectionSuccess = false;
                 if (errorMessage) wcsncpy_s(errorMessage, errorMessageSize, L"DLL处理失败", _TRUNCATE);
             } else {
-                WriteLog("注入安全副本: " + std::string(safeDllPath.begin(), safeDllPath.end())); 
                 if (!InjectDll(pi.hProcess, safeDllPath)) {
-                    WriteLog("错误: DLL注入失败");
+                    WriteLog("错误: 外部DLL注入失败");
                     injectionSuccess = false;
                     if (errorMessage) wcsncpy_s(errorMessage, errorMessageSize, L"DLL注入失败", _TRUNCATE);
                 } else {
-                    WriteLog("DLL注入成功");
+                    WriteLog("外部DLL注入成功");
                 }
             }
         }
 
+        // 3. 注入 Genshin.UnlockerIsland.API.dll (核心组件 - 必须保留)
+        if (injectionSuccess) {
+            std::wstring unlockerApiPath = GetUnlockerApiDllPath();
+            if (!unlockerApiPath.empty() && PathFileExistsW(unlockerApiPath.c_str())) {
+                WriteLog("发现核心组件: Genshin.UnlockerIsland.API.dll");
+                // 核心DLL为了稳定性，建议保留安全副本(Temp)机制，如需直接注入可替换为 InjectDll(pi.hProcess, unlockerApiPath)
+                std::wstring safeApiPath = PrepareSafeDll(unlockerApiPath);
+                if (!safeApiPath.empty()) {
+                    if (InjectDll(pi.hProcess, safeApiPath)) {
+                        WriteLog("Genshin.UnlockerIsland.API.dll 注入成功");
+                    } else {
+                        WriteLog("警告: Genshin.UnlockerIsland.API.dll 注入失败");
+                    }
+                } else {
+                     WriteLog("警告: Genshin.UnlockerIsland.API.dll 安全处理失败");
+                }
+            } else {
+                WriteLog("注意: 未找到 Genshin.UnlockerIsland.API.dll，可能通过其他方式加载");
+            }
+        }
+
+        // 4. 注入 InputHotSwitch
         if (injectionSuccess) {
             std::wstring inputHotSwitchPath = GetInputHotSwitchDllPath();
             if (!inputHotSwitchPath.empty() && PathFileExistsW(inputHotSwitchPath.c_str())) {
@@ -430,12 +468,11 @@ extern "C" {
                     } else {
                         WriteLog("警告: InputHotSwitch 注入失败");
                     }
-                } else {
-                    WriteLog("警告: InputHotSwitch DLL 安全处理失败");
                 }
             }
         }
-        
+
+        // 5. 递归注入 Plugins (直接注入)
         if (injectionSuccess) {
             InjectPlugins(pi.hProcess);
         }
