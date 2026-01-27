@@ -15,25 +15,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="81168a12-0629-450d-985f-10fe9c4900e9" name="更改" comment="1">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.Genshin.Fps.UnlockerIsland/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Genshin.Fps.UnlockerIsland/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/DesignTimeBuild/.dtbcache.v2" beforeDir="false" afterPath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/DesignTimeBuild/.dtbcache.v2" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/FileContentIndex/81ac8a37-0547-4344-936e-dcc0a0c2c5c8.vsidx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/FileContentIndex/acbcf928-4441-4ea7-aa1e-9a3b54707b6e.vsidx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/v18/.futdcache.v2" beforeDir="false" afterPath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/v18/.futdcache.v2" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/v18/.suo" beforeDir="false" afterPath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/v18/.suo" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/v18/DocumentLayout.backup.json" beforeDir="false" afterPath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/v18/DocumentLayout.backup.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/v18/DocumentLayout.json" beforeDir="false" afterPath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/v18/DocumentLayout.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/v18/Insiders/Browse.VC.db" beforeDir="false" afterPath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/v18/Insiders/Browse.VC.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/v18/Insiders/Solution.VC.db" beforeDir="false" afterPath="$PROJECT_DIR$/.vs/Genshin.Fps.UnlockerIsland/v18/Insiders/Solution.VC.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Genshin.Fps.UnlockerIsland.sln" beforeDir="false" afterPath="$PROJECT_DIR$/Genshin.Fps.UnlockerIsland.sln" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Genshin.UnlockerIsland.API/GameState.h" beforeDir="false" afterPath="$PROJECT_DIR$/Genshin.UnlockerIsland.API/GameState.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Launcher/Launcher.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Launcher/Launcher.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Launcher/Launcher.vcxproj" beforeDir="false" afterPath="$PROJECT_DIR$/Launcher/Launcher.vcxproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Launcher/x64/Release/Launcher.iobj" beforeDir="false" afterPath="$PROJECT_DIR$/Launcher/x64/Release/Launcher.iobj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Launcher/x64/Release/Launcher.ipdb" beforeDir="false" afterPath="$PROJECT_DIR$/Launcher/x64/Release/Launcher.ipdb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Launcher/x64/Release/Launcher.log" beforeDir="false" afterPath="$PROJECT_DIR$/Launcher/x64/Release/Launcher.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Launcher/x64/Release/Launcher.tlog/CL.read.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Launcher/x64/Release/Launcher.tlog/CL.read.1.tlog" afterDir="false" />
+    <list default="true" id="81168a12-0629-450d-985f-10fe9c4900e9" name="更改" comment="">
+      <change beforePath="$PROJECT_DIR$/Launcher/obj/rider.project.model.nuget.info" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Launcher/obj/rider.project.restore.info" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Launcher/obj/x64/Release/net6.0-windows/Launcher.assets.cache" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Launcher/obj/x64/Release/net6.0-windows/Launcher.vcxproj.FileListAbsolute.txt" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +33,8 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="cidr-memory-view://0" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/Administrator/Desktop/CN/.vs/Genshin.Fps.UnlockerIsland/v18/DocumentLayout.backup.json" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/Administrator/Desktop/CN/.vs/Genshin.Fps.UnlockerIsland/v18/DocumentLayout.json" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Genshin.UnlockerIsland.API/GameState.h" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Genshin.UnlockerIsland.API/PipeServer.cpp" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Genshin.UnlockerIsland.API/PipeServer.h" root0="FORCE_HIGHLIGHTING" />
@@ -417,7 +404,7 @@
       <workItem from="1769425047007" duration="10138000" />
       <workItem from="1769436412185" duration="3351000" />
       <workItem from="1769453909358" duration="727000" />
-      <workItem from="1769525443658" duration="311000" />
+      <workItem from="1769525443658" duration="643000" />
     </task>
     <task id="LOCAL-00001" summary="1">
       <option name="closed" value="true" />
@@ -475,7 +462,23 @@
       <option name="project" value="LOCAL" />
       <updated>1767628319763</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="1">
+      <option name="closed" value="true" />
+      <created>1769525886180</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1769525886180</updated>
+    </task>
+    <task id="LOCAL-00009" summary="1">
+      <option name="closed" value="true" />
+      <created>1769525948144</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1769525948144</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
