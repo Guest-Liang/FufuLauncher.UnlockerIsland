@@ -80,6 +80,10 @@ struct ModConfig {
     bool is_currently_blocking = false;
 
     bool enable_fov_limit_check = true;
+
+    bool hide_main_ui = false;
+
+    bool display_paimon = false;
 };
 
 namespace Config {

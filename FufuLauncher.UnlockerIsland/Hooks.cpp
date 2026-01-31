@@ -176,10 +176,14 @@ namespace EncryptedPatterns {
     constexpr auto HSR_FPS_2 = XorString::encrypt("80 B9 ? ? ? ? 00 74 ? C7 05 ? ? ? ? 03 00 00 00 48 83 C4 20 5E C3");
     // 3. FPS 3
     constexpr auto HSR_FPS_3 = XorString::encrypt("75 05 E8 ? ? ? ? C7 05 ? ? ? ? 03 00 00 00 48 83 C4 28 C3");
+
+    constexpr auto GetActiveOffset = XorString::encrypt("15B622E0");
 }
 namespace EncryptedStrings {
     constexpr auto SynthesisPage = XorString::encrypt("SynthesisPage");
     constexpr auto QuestBannerPath = XorString::encrypt("Canvas/Pages/InLevelMapPage/GrpMap/GrpPointTips/Layout/QuestBanner");
+    constexpr auto PaimonPath = XorString::encrypt("/EntityRoot/OtherGadgetRoot/NPC_Guide_Paimon(Clone)");
+    constexpr auto ProfileLayerPath = XorString::encrypt("/Canvas/Pages/PlayerProfilePage");
 }
 
 typedef int32_t (WINAPI *tGetFrameCount)();
@@ -208,6 +212,8 @@ typedef ULONGLONG (WINAPI* tGetTickCount64)();
 typedef int (WSAAPI* tSend)(SOCKET s, const char* buf, int len, int flags);
 typedef int (WSAAPI* tSendTo)(SOCKET s, const char* buf, int len, int flags, const struct sockaddr* to, int tolen);
 typedef HRESULT(__stdcall* tPresent1)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters);
+typedef bool (WINAPI *tGetActive)(void*);
+std::atomic<void*> p_GetActive{ nullptr };
 
 namespace {
     std::atomic<void*> o_GetFrameCount{ nullptr };
@@ -254,6 +260,25 @@ namespace {
     tPresent1 o_Present1 = nullptr;
 }
 
+void* GetGetActiveAddr() {
+    HMODULE hMod = GetModuleHandle(NULL);
+    if (!hMod) return nullptr;
+
+    uintptr_t base = (uintptr_t)hMod;
+    
+    std::string offsetStr = XorString::decrypt(EncryptedPatterns::GetActiveOffset);
+
+    uintptr_t offsetVal = 0;
+    std::stringstream ss;
+    ss << std::hex << offsetStr;
+    ss >> offsetVal;
+    
+    void* addr = (void*)(base + offsetVal);
+    
+    std::cout << "[SCAN] GetActive resolved via encrypted offset: 0x" 
+              << std::hex << offsetVal << std::dec << std::endl;
+    return addr;
+}
 
 #define HOOK_REL(name, enc_pat, hookFn, storeOrig) \
     { \
@@ -316,6 +341,68 @@ struct SafeFogBuffer {
     uint8_t padding[192];
 };
 
+void UpdateHideUID() {
+    auto& config = Config::Get();
+    if (!config.hide_uid) return;
+    
+    static void* cached_uid_obj = nullptr;
+    static float last_check_time = 0.0f;
+    float current_time = (float)clock() / CLOCKS_PER_SEC;
+
+    auto _SetActive = (tSetActive)p_SetActive.load();
+    if (!_SetActive) return;
+    
+    if (cached_uid_obj) {
+        _SetActive(cached_uid_obj, false);
+        return;
+    }
+
+    if (current_time - last_check_time > 2.0f) {
+        last_check_time = current_time;
+
+        auto _FindString = (tFindString)p_FindString.load();
+        auto _FindGameObject = (tFindGameObject)p_FindGameObject.load();
+
+        if (_FindString && _FindGameObject) {
+            const char* s = "/BetaWatermarkCanvas(Clone)/Panel/TxtUID";
+            auto str_obj = _FindString(s);
+            if (str_obj) {
+                cached_uid_obj = _FindGameObject(str_obj);
+            }
+        }
+    }
+}
+void UpdateHideMainUI() {
+    auto& config = Config::Get();
+    if (!config.hide_main_ui) return;
+
+    static void* cached_ui_obj = nullptr;
+    static float last_check_time = 0.0f;
+    float current_time = (float)clock() / CLOCKS_PER_SEC;
+
+    auto _SetActive = (tSetActive)p_SetActive.load();
+    if (!_SetActive) return;
+
+    if (cached_ui_obj) {
+        _SetActive(cached_ui_obj, false);
+        return;
+    }
+    
+    if (current_time - last_check_time > 2.0f) {
+        last_check_time = current_time;
+
+        auto _FindString = (tFindString)p_FindString.load();
+        auto _FindGameObject = (tFindGameObject)p_FindGameObject.load();
+
+        if (_FindString && _FindGameObject) {
+            const char* s = "/Canvas/Pages/PlayerProfilePage/GrpProfile/Right/GrpPlayerCard/UID"; 
+            auto str_obj = _FindString(s);
+            if (str_obj) {
+                cached_ui_obj = _FindGameObject(str_obj);
+            }
+        }
+    }
+}
 HRESULT __stdcall hk_Present1_Detect(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters) {
     static bool s_Warned = false;
     if (!s_Warned) {
@@ -410,6 +497,62 @@ ULONGLONG WINAPI hk_GetTickCount64() {
 
     s_LastRealTick = current_real;
     return s_LastFakeTick;
+}
+
+void HandlePaimon() {
+    auto& cfg = Config::Get();
+    if (!cfg.display_paimon) return;
+    
+    // 检查必要函数是否就绪
+    auto _FindString = (tFindString)p_FindString.load();
+    auto _FindGameObject = (tFindGameObject)p_FindGameObject.load();
+    auto _SetActive = (tSetActive)p_SetActive.load();
+    auto _GetActive = (tGetActive)p_GetActive.load();
+    
+    if (!_FindString || !_FindGameObject || !_SetActive || !_GetActive) {
+        return;
+    }
+    
+    static void* cachedPaimonObj = nullptr;
+    static void* cachedProfileObj = nullptr;
+    static float lastSearchTime = 0.0f;
+    float currentTime = (float)clock() / CLOCKS_PER_SEC;
+    
+    if ((!cachedPaimonObj || !cachedProfileObj) && (currentTime - lastSearchTime > 2.0f)) {
+        lastSearchTime = currentTime;
+        
+        SafeInvoke([&] {
+            std::string paimonPath = XorString::decrypt(EncryptedStrings::PaimonPath);
+            std::string profilePath = XorString::decrypt(EncryptedStrings::ProfileLayerPath);
+            
+            Il2CppString* paimonStr = _FindString(paimonPath.c_str());
+            Il2CppString* profileStr = _FindString(profilePath.c_str());
+            
+            if (paimonStr && profileStr) {
+                cachedPaimonObj = _FindGameObject(paimonStr);
+                cachedProfileObj = _FindGameObject(profileStr);
+            }
+        });
+    }
+    
+    if (cachedPaimonObj && cachedProfileObj) {
+        SafeInvoke([&] {
+            bool profileOpen = _GetActive(cachedProfileObj);
+            
+            static bool lastProfileState = !profileOpen;
+            
+            if (profileOpen != lastProfileState) {
+                if (profileOpen) {
+                    std::cout << "[Paimon] State: HIDDEN (Reason: Profile Menu is OPEN)" << std::endl;
+                } else {
+                    std::cout << "[Paimon] State: VISIBLE (Reason: Profile Menu is CLOSED)" << std::endl;
+                }
+                lastProfileState = profileOpen;
+            }
+            
+            _SetActive(cachedPaimonObj, !profileOpen);
+        });
+    }
 }
 
 bool LoadTextureFromFile(const char* filename, ID3D11Device* device, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height)
@@ -998,9 +1141,15 @@ int32_t WINAPI hk_GetFrameCount() {
 }
 
 __int64 WINAPI hk_GameUpdate(__int64 a1, const char* a2) {
-
+    // 1. 调用原始的游戏更新函数
     auto orig = (tGameUpdate)o_GameUpdate.load();
-    return orig ? orig(a1, a2) : 0;
+    __int64 result = orig ? orig(a1, a2) : 0;
+    
+    UpdateHideUID();
+    UpdateHideMainUI();
+    HandlePaimon();
+
+    return result;
 }
 
 int32_t WINAPI hk_ChangeFov(void* __this, float value) {
@@ -1126,6 +1275,13 @@ __int64 hk_DisplayFog(__int64 a1, __int64 a2) {
 }
 
 bool Hooks::Init() {
+    void* getActiveAddr = GetGetActiveAddr();
+    if (getActiveAddr) {
+        p_GetActive.store(getActiveAddr);
+        LogOffset("GameObject.get_active", getActiveAddr, getActiveAddr);
+    } else {
+        std::cout << "[ERR] Failed to resolve GetActive address" << std::endl;
+    }
     if (Config::Get().dump_offsets) {
         std::string filePath = GetOwnDllDir() + "\\offsets.txt";
         std::ofstream file(filePath, std::ios::trunc);

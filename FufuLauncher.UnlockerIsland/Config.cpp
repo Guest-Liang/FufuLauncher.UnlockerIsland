@@ -166,6 +166,10 @@ namespace Config {
         g_Config.network_toggle_key = ReadInt("NetworkToggleKey", VK_F11, file);
 
         g_Config.enable_fov_limit_check = ReadInt("FovLimitCheck", 1, file);
+
+        g_Config.hide_main_ui = ReadInt("HideMainUI", 0, file);
+
+        g_Config.display_paimon = ReadInt("DisplayPaimon", 0, file);
     }
     void SaveOverlayPos(float x, float y) {
         g_Config.overlay_pos_x = x;
