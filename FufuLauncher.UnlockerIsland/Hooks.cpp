@@ -534,13 +534,20 @@ void UpdateFreeCamPhysics() {
         isAddrInitialized = true;
     }
     
-    if (call_GetMainCamera && call_Camera_GetC2W) {
-        void* pCamera = call_GetMainCamera(); 
+    if (Config::Get().enable_free_cam_movement_fix && call_GetMainCamera && call_Camera_GetC2W) {
+        void* pCamera = call_GetMainCamera();
         if (pCamera) {
             Matrix4x4 mat;
             call_Camera_GetC2W(&mat, pCamera, nullptr);
-            rightX = mat.m[0][0]; rightY = mat.m[1][0]; rightZ = mat.m[2][0];
-            forwardX = -mat.m[0][2]; forwardY = -mat.m[1][2]; forwardZ = -mat.m[2][2];
+            
+            rightX = mat.m[0][0];
+            rightY = mat.m[1][0];
+            rightZ = mat.m[2][0];
+            
+            forwardX = -mat.m[0][2];
+            forwardY = -mat.m[1][2];
+            forwardZ = -mat.m[2][2];
+            
             gotMatrix = true;
         }
     }
