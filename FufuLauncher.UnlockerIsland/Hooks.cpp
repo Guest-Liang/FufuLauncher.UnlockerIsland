@@ -199,6 +199,8 @@ namespace EncryptedStrings {
     constexpr auto QuestBannerPath = XorString::encrypt("Canvas/Pages/InLevelMapPage/GrpMap/GrpPointTips/Layout/QuestBanner");
     constexpr auto PaimonPath = XorString::encrypt("/EntityRoot/OtherGadgetRoot/NPC_Guide_Paimon(Clone)");
     constexpr auto ProfileLayerPath = XorString::encrypt("/Canvas/Pages/PlayerProfilePage");
+    constexpr auto UIDPathMain = XorString::encrypt("/Canvas/Pages/PlayerProfilePage/GrpProfile/Right/GrpPlayerCard/UID");
+    constexpr auto UIDPathWatermark = XorString::encrypt("/BetaWatermarkCanvas(Clone)/Panel/TxtUID");
 }
 
 typedef int32_t (WINAPI *tGetFrameCount)();
@@ -694,8 +696,8 @@ void UpdateHideUID() {
         auto _FindGameObject = (tFindGameObject)p_FindGameObject.load();
 
         if (_FindString && _FindGameObject) {
-            const char* s = "/BetaWatermarkCanvas(Clone)/Panel/TxtUID";
-            auto str_obj = _FindString(s);
+            std::string s = XorString::decrypt(EncryptedStrings::UIDPathWatermark);
+            auto str_obj = _FindString(s.c_str());
             if (str_obj) {
                 cached_uid_obj = _FindGameObject(str_obj);
             }
@@ -725,8 +727,8 @@ void UpdateHideMainUI() {
         auto _FindGameObject = (tFindGameObject)p_FindGameObject.load();
 
         if (_FindString && _FindGameObject) {
-            const char* s = "/Canvas/Pages/PlayerProfilePage/GrpProfile/Right/GrpPlayerCard/UID"; 
-            auto str_obj = _FindString(s);
+            std::string s = XorString::decrypt(EncryptedStrings::UIDPathMain);
+            auto str_obj = _FindString(s.c_str());
             if (str_obj) {
                 cached_ui_obj = _FindGameObject(str_obj);
             }
