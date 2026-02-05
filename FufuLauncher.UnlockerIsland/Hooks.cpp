@@ -702,8 +702,8 @@ void UpdateHideUID() {
         auto _FindGameObject = (tFindGameObject)p_FindGameObject.load();
 
         if (_FindString && _FindGameObject) {
-            std::string s = XorString::decrypt(EncryptedStrings::UIDPathWatermark);
-            auto str_obj = _FindString(s.c_str());
+            static const std::string s_uidPath = XorString::decrypt(EncryptedStrings::UIDPathWatermark);
+            auto str_obj = _FindString(s_uidPath.c_str());
             if (str_obj) {
                 cached_uid_obj = _FindGameObject(str_obj);
             }
@@ -1835,7 +1835,6 @@ bool Hooks::Init() {
         HMODULE hMod = GetModuleHandle(NULL);
         if (hMod) {
             uintptr_t base = (uintptr_t)hMod;
-            std::cout << "[SCAN] Initializing Free Camera Hooks..." << std::endl;
             
             auto decryptOffset = [](const auto& encPattern) -> uintptr_t {
                 std::string hexStr = XorString::decrypt(encPattern);
