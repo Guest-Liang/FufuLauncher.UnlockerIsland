@@ -203,7 +203,7 @@ namespace EncryptedStrings {
     constexpr auto QuestBannerPath = XorString::encrypt("Canvas/Pages/InLevelMapPage/GrpMap/GrpPointTips/Layout/QuestBanner");
     constexpr auto PaimonPath = XorString::encrypt("/EntityRoot/OtherGadgetRoot/NPC_Guide_Paimon(Clone)");
     constexpr auto ProfileLayerPath = XorString::encrypt("/Canvas/Pages/PlayerProfilePage");
-    constexpr auto UIDPathMain = XorString::encrypt("/Canvas/Pages/PlayerProfilePage/GrpProfile/Right/GrpPlayerCard/UID");
+    constexpr auto UIDPathMain = XorString::encrypt("/Canvas/Pages/PlayerProfilePage/GrpProfile/Right/GrpPlayerCard/UID/Layout/PlayerID");
     constexpr auto UIDPathWatermark = XorString::encrypt("/BetaWatermarkCanvas(Clone)/Panel/TxtUID");
 }
 
@@ -684,7 +684,6 @@ void UpdateHideUID() {
     
     static void* cached_uid_obj = nullptr;
     static float last_check_time = 0.0f;
-    float current_time = (float)clock() / CLOCKS_PER_SEC;
 
     auto _SetActive = (tSetActive)p_SetActive.load();
     if (!_SetActive) return;
@@ -694,7 +693,8 @@ void UpdateHideUID() {
         return;
     }
 
-    if (current_time - last_check_time > 2.0f) {
+    float current_time = (float)clock() / CLOCKS_PER_SEC;
+    if (current_time - last_check_time > 0.1f) {
         last_check_time = current_time;
 
         auto _FindString = (tFindString)p_FindString.load();
@@ -704,7 +704,12 @@ void UpdateHideUID() {
             static const std::string s_uidPath = XorString::decrypt(EncryptedStrings::UIDPathWatermark);
             auto str_obj = _FindString(s_uidPath.c_str());
             if (str_obj) {
-                cached_uid_obj = _FindGameObject(str_obj);
+                void* foundObj = _FindGameObject(str_obj);
+                if (foundObj) {
+                    cached_uid_obj = foundObj;
+                    _SetActive(cached_uid_obj, false);
+                    std::cout << "[HideUID] Object found and cached: " << cached_uid_obj << std::endl;
+                }
             }
         }
     }
@@ -712,19 +717,19 @@ void UpdateHideUID() {
 void UpdateHideMainUI() {
     auto& config = Config::Get();
     if (!config.hide_main_ui) return;
-
+    
     static void* cached_ui_obj = nullptr;
     static float last_check_time = 0.0f;
-    float current_time = (float)clock() / CLOCKS_PER_SEC;
 
     auto _SetActive = (tSetActive)p_SetActive.load();
     if (!_SetActive) return;
-
+    
     if (cached_ui_obj) {
         _SetActive(cached_ui_obj, false);
         return;
     }
-    
+
+    float current_time = (float)clock() / CLOCKS_PER_SEC;
     if (current_time - last_check_time > 2.0f) {
         last_check_time = current_time;
 
@@ -732,10 +737,15 @@ void UpdateHideMainUI() {
         auto _FindGameObject = (tFindGameObject)p_FindGameObject.load();
 
         if (_FindString && _FindGameObject) {
-            std::string s = XorString::decrypt(EncryptedStrings::UIDPathMain);
-            auto str_obj = _FindString(s.c_str());
+            static const std::string s_uiPath = XorString::decrypt(EncryptedStrings::UIDPathMain);
+            auto str_obj = _FindString(s_uiPath.c_str());
             if (str_obj) {
-                cached_ui_obj = _FindGameObject(str_obj);
+                void* foundObj = _FindGameObject(str_obj);
+                if (foundObj) {
+                    cached_ui_obj = foundObj;
+                    _SetActive(cached_ui_obj, false);
+                    std::cout << "[HideMainUI] Object found and cached: " << cached_ui_obj << std::endl;
+                }
             }
         }
     }
@@ -1618,7 +1628,6 @@ auto WINAPI hk_GameUpdate(__int64 a1, const char* a2) -> __int64
 {
     auto orig = (tGameUpdate)o_GameUpdate.load();
     __int64 result = orig ? orig(a1, a2) : 0;
-    
     UpdateHideUID();
     UpdateHideMainUI();
     HandlePaimonV2();
@@ -1668,6 +1677,7 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
 }
 
 void WINAPI hk_SetupQuestBanner(void* __this) {
+    
     auto& cfg = Config::Get();
     auto findStr = (tFindString)p_FindString.load();
     auto findGO = (tFindGameObject)p_FindGameObject.load();
