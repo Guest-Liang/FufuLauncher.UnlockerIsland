@@ -682,17 +682,12 @@ void UpdateHideUID() {
     auto& config = Config::Get();
     if (!config.hide_uid) return;
     
-    static void* cached_uid_obj = nullptr;
     static float last_check_time = 0.0f;
     float current_time = (float)clock() / CLOCKS_PER_SEC;
 
     auto _SetActive = (tSetActive)p_SetActive.load();
     if (!_SetActive) return;
     
-    if (cached_uid_obj) {
-        _SetActive(cached_uid_obj, false);
-        return;
-    }
 
     if (current_time - last_check_time > 2.0f) {
         last_check_time = current_time;
@@ -704,7 +699,10 @@ void UpdateHideUID() {
             static const std::string s_uidPath = XorString::decrypt(EncryptedStrings::UIDPathWatermark);
             auto str_obj = _FindString(s_uidPath.c_str());
             if (str_obj) {
-                cached_uid_obj = _FindGameObject(str_obj);
+                void* foundObj = _FindGameObject(str_obj);
+                if (foundObj) {
+                    _SetActive(foundObj, false);
+                }
             }
         }
     }
