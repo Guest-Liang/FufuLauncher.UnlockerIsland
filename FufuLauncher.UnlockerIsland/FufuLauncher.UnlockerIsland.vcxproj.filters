@@ -57,6 +57,18 @@
     <ClInclude Include="SecurityUtils.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="GamepadHotSwitch.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="HookWndProc.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EncryptedData.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="XorString.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -90,6 +102,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ImGui\imgui_widgets.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GamepadHotSwitch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="HookWndProc.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

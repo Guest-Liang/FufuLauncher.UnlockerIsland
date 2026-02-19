@@ -92,6 +92,8 @@ struct ModConfig {
     int free_cam_reset_key = VK_F7;
 
     bool enable_free_cam_movement_fix = true;
+
+    bool enable_gamepad_hot_switch = false;
 };
 
 namespace Config {

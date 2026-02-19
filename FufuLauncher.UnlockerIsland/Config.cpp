@@ -178,6 +178,8 @@ namespace Config {
         g_Config.free_cam_reset_key = ReadInt("FreeCamResetKey", VK_F7, file);
 
         g_Config.enable_free_cam_movement_fix = ReadInt("EnableFreeCamMovementFix", 1, file);
+        
+        g_Config.enable_gamepad_hot_switch = ReadInt("EnableGamepadHotSwitch", 1, file);
     }
     void SaveOverlayPos(float x, float y) {
         g_Config.overlay_pos_x = x;

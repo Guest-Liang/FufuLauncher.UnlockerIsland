@@ -142,7 +142,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Config.h" />
+    <ClInclude Include="EncryptedData.h" />
+    <ClInclude Include="GamepadHotSwitch.h" />
     <ClInclude Include="Hooks.h" />
+    <ClInclude Include="HookWndProc.h" />
     <ClInclude Include="ImGui\imconfig.h" />
     <ClInclude Include="ImGui\imgui.h" />
     <ClInclude Include="ImGui\imgui_impl_dx11.h" />
@@ -155,11 +158,14 @@
     <ClInclude Include="Scanner.h" />
     <ClInclude Include="SecurityUtils.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="XorString.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="GamepadHotSwitch.cpp" />
     <ClCompile Include="Hooks.cpp" />
+    <ClCompile Include="HookWndProc.cpp" />
     <ClCompile Include="ImGui\imgui.cpp" />
     <ClCompile Include="ImGui\imgui_demo.cpp" />
     <ClCompile Include="ImGui\imgui_draw.cpp" />
