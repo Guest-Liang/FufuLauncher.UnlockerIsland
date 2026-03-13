@@ -13,6 +13,14 @@
 
 const wchar_t* PLUGINS_SUBDIR_NAME = L"Plugins"; 
 
+std::string WStringToString(const std::wstring& wstr) {
+    if (wstr.empty()) return std::string();
+    int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+    std::string strTo(size_needed, 0);
+    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+    return strTo;
+}
+
 std::wstring GetCurrentDllDirectory() {
     HMODULE hModule = NULL;
     GetModuleHandleExW(
@@ -58,12 +66,21 @@ void HideConsole() {
 
 bool InjectDll(HANDLE hProcess, const std::wstring& dllPath) {
     if (GetFileAttributesW(dllPath.c_str()) == INVALID_FILE_ATTRIBUTES) return false;
+    
+    std::wstring injectPath = dllPath;
+    DWORD shortPathLen = GetShortPathNameW(dllPath.c_str(), nullptr, 0);
+    if (shortPathLen > 0) {
+        std::vector<wchar_t> shortPath(shortPathLen);
+        if (GetShortPathNameW(dllPath.c_str(), shortPath.data(), shortPathLen) > 0) {
+            injectPath = shortPath.data();
+        }
+    }
 
-    size_t size = (dllPath.length() + 1) * sizeof(wchar_t);
+    size_t size = (injectPath.length() + 1) * sizeof(wchar_t);
     LPVOID remoteMem = VirtualAllocEx(hProcess, nullptr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
     if (!remoteMem) return false;
     
-    if (!WriteProcessMemory(hProcess, remoteMem, dllPath.c_str(), size, nullptr)) {
+    if (!WriteProcessMemory(hProcess, remoteMem, injectPath.c_str(), size, nullptr)) {
         VirtualFreeEx(hProcess, remoteMem, 0, MEM_RELEASE);
         return false;
     }
@@ -105,7 +122,7 @@ void RecursiveScanAndInject(HANDLE hProcess, const std::wstring& directory, int&
                 const wchar_t* ext = findData.cFileName + nameLen - 4;
                 if (_wcsicmp(ext, L".dll") == 0) {
                     std::wstring wFileName = findData.cFileName;
-                    std::string sFileName(wFileName.begin(), wFileName.end());
+                    std::string sFileName = WStringToString(wFileName);
 
                     WriteLog("发现插件: " + sFileName + "，正在注入...");
 
@@ -129,11 +146,11 @@ void InjectPlugins(HANDLE hProcess) {
     std::wstring pluginsDir = dllDir + L"\\" + PLUGINS_SUBDIR_NAME;
 
     if (GetFileAttributesW(pluginsDir.c_str()) == INVALID_FILE_ATTRIBUTES) {
-        WriteLog("未找到 Plugins 目录，跳过插件加载。查找路径: " + std::string(pluginsDir.begin(), pluginsDir.end()));
+        WriteLog("未找到 Plugins 目录，跳过插件加载。查找路径: " + WStringToString(pluginsDir));
         return;
     }
 
-    WriteLog("正在递归扫描插件目录: " + std::string(pluginsDir.begin(), pluginsDir.end()));
+    WriteLog("正在递归扫描插件目录: " + WStringToString(pluginsDir));
     
     int totalInjected = 0;
     RecursiveScanAndInject(hProcess, pluginsDir, totalInjected);
@@ -202,7 +219,7 @@ extern "C" {
                 packet.salt = GetTickCount64() ^ 0x9988776655443322;
                 packet.target_pid = pi.dwProcessId;
                 
-                std::string sName(exeName.begin(), exeName.end());
+                std::string sName = WStringToString(exeName);
                 strncpy_s(packet.process_name, sName.c_str(), sizeof(packet.process_name) - 1);
                 
                 packet.checksum = SecurityCrypto::CalcChecksum(&packet);
@@ -211,7 +228,6 @@ extern "C" {
                 
                 CopyMemory(pSharedBuf, &packet, sizeof(AuthPacket));
                 
-
                 UnmapViewOfFile(pSharedBuf);
             }
         }
