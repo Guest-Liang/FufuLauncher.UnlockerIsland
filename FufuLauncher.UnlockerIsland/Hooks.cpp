@@ -167,6 +167,7 @@ typedef void(__fastcall* tSetPos)(void* pTransform, Vector3* pPos);
 typedef void* (__fastcall* tGetMainCamera)();
 typedef void* (__fastcall* tGetTransform)(void* pComponent);
 typedef void(__fastcall* tSetupResinList)(void* pThis);
+typedef void (__fastcall *tButtonClicked)(void*);
 
 bool g_ShowCoordWindow = false;
 bool g_ResistInBeyd = false;
@@ -192,6 +193,8 @@ namespace {
     std::atomic<void*> o_SetSyncCount{ nullptr };
     std::atomic<void*> o_GameUpdate{ nullptr };
     std::atomic<void*> o_SetupResinList{ nullptr };
+    std::atomic<void*> o_ClockPageOk{ nullptr };
+    std::atomic<void*> p_ClockPageClose{ nullptr };
     std::atomic<void*> o_ActorManagerCtor{ nullptr };
     std::atomic<void*> p_GetGlobalActor{ nullptr };
     std::atomic<void*> p_AvatarPaimonAppear{ nullptr };
@@ -228,6 +231,8 @@ namespace Offsets {
     std::string CameraGetC2WOffset;
     std::string GetComponent;
     std::string GetText;
+    std::string ClockPageOkOffset;
+    std::string ClockPageCloseOffset;
 
     void InitOffsets(bool isOS) {
         if (isOS) {
@@ -241,6 +246,8 @@ namespace Offsets {
             CameraGetC2WOffset = XorString::decrypt(EncryptedPatterns::OS::CameraGetC2WOffset);
             GetComponent = XorString::decrypt(EncryptedPatterns::OS::GetComponent);
             GetText = XorString::decrypt(EncryptedPatterns::OS::GetText);
+            ClockPageOkOffset = XorString::decrypt(EncryptedPatterns::OS::ClockPageOkOffset);
+            ClockPageCloseOffset = XorString::decrypt(EncryptedPatterns::OS::ClockPageCloseOffset);
             std::cout << "[INFO] Initialized Global (OS) Offsets." << std::endl;
         } else {
             GetActiveOffset = XorString::decrypt(EncryptedPatterns::CN::GetActiveOffset);
@@ -253,6 +260,8 @@ namespace Offsets {
             CameraGetC2WOffset = XorString::decrypt(EncryptedPatterns::CN::CameraGetC2WOffset);
             GetComponent = XorString::decrypt(EncryptedPatterns::CN::GetComponent);
             GetText = XorString::decrypt(EncryptedPatterns::CN::GetText);
+            ClockPageOkOffset = XorString::decrypt(EncryptedPatterns::CN::ClockPageOkOffset);
+            ClockPageCloseOffset = XorString::decrypt(EncryptedPatterns::CN::ClockPageCloseOffset);
             std::cout << "[INFO] Initialized China (CN) Offsets." << std::endl;
         }
     }
@@ -543,6 +552,37 @@ void UpdateFreeCamPhysics() {
     FreeCamState::camX += FreeCamState::velX;
     FreeCamState::camY += FreeCamState::velY;
     FreeCamState::camZ += FreeCamState::velZ;
+}
+
+void WINAPI hk_ClockPageOk(void* pThis) {
+    auto& cfg = Config::Get();
+    auto orig = (tButtonClicked)o_ClockPageOk.load();
+    
+    if (cfg.debug_console) {
+        std::cout << "[Clock Debug] OK Button Hook Triggered!" << std::endl;
+    }
+
+    if (cfg.enable_clock_speedup && p_ClockPageClose.load()) {
+        auto closeBtnFunc = (tButtonClicked)p_ClockPageClose.load();
+        
+        if (orig) {
+            orig(pThis); 
+        }
+        
+        if (cfg.debug_console) {
+            std::cout << "[Clock Debug] Forcing Close UI..." << std::endl;
+        }
+        
+        SafeInvoke([&] {
+            closeBtnFunc(pThis);
+        });
+        
+        return;
+    }
+    
+    if (orig) {
+        orig(pThis);
+    }
 }
 
 void __fastcall hk_SetPos(void* pTransform, Vector3* pPos) {
@@ -1395,6 +1435,10 @@ bool Hooks::Init() {
     SCAN_REL("SetSyncCount", EncryptedPatterns::SetSyncCount, o_SetSyncCount);
     SCAN_DIR("CheckCanOpenMap", EncryptedPatterns::CheckCanOpenMap, p_CheckCanOpenMap);
     HOOK_REL("SetupResinList", EncryptedPatterns::SetupResinList, hk_SetupResinList, o_SetupResinList);
+//  SCAN_DIR("ClockPageClose", EncryptedPatterns::ClockPageClose, p_ClockPageClose);
+//  HOOK_DIR("ClockPageOk", EncryptedPatterns::ClockPageOk, hk_ClockPageOk, o_ClockPageOk);
+
+    
 
     DWORD oldProtect;
     VirtualProtect(p_CheckCanOpenMap.load(), 5, PAGE_EXECUTE_READWRITE, &oldProtect);
@@ -1433,6 +1477,21 @@ bool Hooks::Init() {
         p_AvatarPaimonAppear.store(avatarPaimonAppearAddr);
         LogOffset("GlobalActor.AvatarPaimonAppear", avatarPaimonAppearAddr, avatarPaimonAppearAddr);
         std::cout << "[SCAN] AvatarPaimonAppear at: 0x" << std::hex << offsetPaimon << std::dec << '\n';
+
+        uintptr_t offsetClockOk = StringToAddr(Offsets::ClockPageOkOffset);
+        void* clockOkAddr = (void*)(base + offsetClockOk);
+        if (MH_CreateHook(clockOkAddr, (void*)hk_ClockPageOk, (void**)&o_ClockPageOk) == MH_OK) {
+            // 稍后在底部的 MH_EnableHook(MH_ALL_HOOKS) 中会被统一启用
+            std::cout << "[SCAN] ClockPageOk hooked via offset at: 0x" << std::hex << offsetClockOk << std::dec << '\n';
+        } else {
+            std::cout << "[ERR] Failed to hook ClockPageOk via offset.\n";
+        }
+
+        uintptr_t offsetClockClose = StringToAddr(Offsets::ClockPageCloseOffset);
+        void* clockCloseAddr = (void*)(base + offsetClockClose);
+        p_ClockPageClose.store(clockCloseAddr);
+        std::cout << "[SCAN] ClockPageClose resolved via offset at: 0x" << std::hex << offsetClockClose << std::dec << '\n';
+        // -----------------------------------------------------------
         
     } else {
         std::cout << "[ERR] Critical: GetModuleHandle failed!" << '\n';

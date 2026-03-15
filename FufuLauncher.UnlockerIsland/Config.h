@@ -74,6 +74,8 @@ struct ModConfig {
     bool  ResinItem107009;
     bool  ResinItem107012;
     bool  ResinItem220007;
+
+    bool enable_clock_speedup = false;
 };
 
 namespace Config {

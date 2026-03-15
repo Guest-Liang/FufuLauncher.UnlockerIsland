@@ -157,5 +157,7 @@ namespace Config {
         g_Config.ResinItem107009 = ReadInt("ResinItem107009", 1, file);
         g_Config.ResinItem107012 = ReadInt("ResinItem107012", 1, file);
         g_Config.ResinItem220007 = ReadInt("ResinItem220007", 1, file);
+
+        g_Config.enable_clock_speedup = ReadInt("ClockSpeedup", 0, file);
     }
 }

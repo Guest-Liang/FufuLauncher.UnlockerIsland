@@ -50,6 +50,10 @@ namespace EncryptedPatterns {
 	inline constexpr auto GetName = XorString::encrypt("40 53 48 81 EC ?? ?? ?? ?? 48 8B D9 48 85 C9 0F 84 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 85 C0 0F 84 ?? ?? ?? ?? 48 8B 10 48 8B C8 FF 52 ?? 48 85 C0 0F 85 ?? ?? ?? ?? 48 8B CB E8 ?? ?? ?? ??");
     // 22. SetupResinList
     inline constexpr auto SetupResinList = XorString::encrypt("E8 ?? ?? ?? ?? 84 DB 74 ?? 4C 89 F1 E8 ?? ?? ?? ?? 49 8B 86 ?? ?? ?? ?? 48 85 C0 75 ?? E9 ?? ?? ?? ??");
+    // 23. ClockPageOkButton HDGNBJFKNEO
+    inline constexpr auto ClockPageOk = XorString::encrypt("56 57 55 53 48 83 EC ?? 48 89 CE 80 3D ?? ?? ?? ?? 00 0F 85 ?? ?? ?? ?? 80 BE ?? ?? ?? ?? 00 74 ??");
+    // 24. ClockPageCloseButton DGHEBBPGLIK
+    inline constexpr auto ClockPageClose = XorString::encrypt("56 57 53 48 83 EC ?? 48 89 CE 80 3D ?? ?? ?? ?? 00 0F 85 ?? ?? ?? ?? 48 8B 8E ?? ?? ?? ?? 48 85 C9 0F 84 ?? ?? ?? ?? 83 79 ?? 00 7E ?? 48 8B 15 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 85 C0 0F 84 ?? ?? ?? ?? 48 89 C7 48 8B 40 ?? 85 C0 7E ?? 89 C0 31 DB 66 66 66 66 66 66 2E 0F 1F 84 00 00 00 00 00 89 C0 48 39 C3 0F 83 ?? ?? ?? ?? 48 8B 4C DF ?? 48 85 C9 0F 84 ?? ?? ?? ?? 48 8B 01 0F B7 90");
 
     namespace CN {
         // UnityEngine.GameObject.get_active
@@ -72,6 +76,10 @@ namespace EncryptedPatterns {
         inline constexpr auto GetComponent = XorString::encrypt("15F92F70");
         // Text.get_text
         inline constexpr auto GetText = XorString::encrypt("1608F960");
+        // public Void HDGNBJFKNEO
+        inline constexpr auto ClockPageOkOffset = XorString::encrypt("E638050");
+        // public Void DGHEBBPGLIK
+        inline constexpr auto ClockPageCloseOffset = XorString::encrypt("DF566D0");
     }
     
     namespace OS {
@@ -95,6 +103,10 @@ namespace EncryptedPatterns {
         inline constexpr auto GetComponent = XorString::encrypt("15F92F70");
         // Text.get_text
         inline constexpr auto GetText = XorString::encrypt("160489A0");
+        // private System.Void HDGNBJFKNEO() { } // RVA: 0xe6153f0 Token: 0x601b5b0 Slot: -1
+        inline constexpr auto ClockPageOkOffset = XorString::encrypt("E6153F0");
+        // protected System.Void DGHEBBPGLIK() { } // RVA: 0xdf310b0 Token: 0x60574dc Slot: -1
+        inline constexpr auto ClockPageCloseOffset = XorString::encrypt("DF310B0");
     }
 }
 
@@ -109,6 +121,8 @@ namespace Offsets {
     extern std::string CameraGetC2WOffset;
     extern std::string GetComponent;
     extern std::string GetText;
+    extern std::string ClockPageOkOffset;
+    extern std::string ClockPageCloseOffset;
 
     void InitOffsets(bool isOS);
 }
