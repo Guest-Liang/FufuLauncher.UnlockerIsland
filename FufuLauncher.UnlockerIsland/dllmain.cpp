@@ -256,7 +256,7 @@ void MainWorker(HMODULE hMod) {
         static bool net_was_pressed = false;
         bool net_is_pressed = (GetAsyncKeyState(cfg.network_toggle_key) & 0x8000);
 
-        if (net_is_pressed && !net_was_pressed) {
+        if (cfg.enable_network_toggle && net_is_pressed && !net_was_pressed) {
             cfg.is_currently_blocking = !cfg.is_currently_blocking;
             
             if (cfg.is_currently_blocking) {
