@@ -138,7 +138,8 @@ namespace Config {
 
         g_Config.hide_main_ui = ReadInt("HideMainUI", 0, file);
 
-        g_Config.display_paimon = ReadInt("DisplayPaimon", 0, file);
+        g_Config.display_paimon_v1 = ReadInt("DisplayPaimonV1", 0, file);
+        g_Config.display_paimon_v2 = ReadInt("DisplayPaimonV2", 0, file);
         
         g_Config.enable_free_cam = ReadInt("EnableFreeCam", 0, file);
         

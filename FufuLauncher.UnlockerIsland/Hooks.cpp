@@ -216,6 +216,7 @@ namespace {
     tGetMainCamera call_GetMainCamera = nullptr;
     tGetTransform call_GetTransform = nullptr;
     std::atomic<void*> p_GetActive{ nullptr };
+    tCamera_GetC2W call_Camera_GetC2W = nullptr;
     void* g_ActorManagerInstance = nullptr;
     bool g_GamepadHotSwitchInitialized = false;
 }
@@ -352,6 +353,52 @@ struct SafeFogBuffer {
     uint8_t padding[192];
 };
 
+void InitCameraMatrixAddress() {
+    static bool isAddrInitialized = false;
+    if (!isAddrInitialized) {
+        uintptr_t base = (uintptr_t)GetModuleHandle(NULL);
+        if (base) {
+            std::string offsetStr = Offsets::CameraGetC2WOffset;
+            uintptr_t offsetVal = 0;
+            std::stringstream ss;
+            ss << std::hex << offsetStr;
+            ss >> offsetVal;
+            call_Camera_GetC2W = (tCamera_GetC2W)(base + offsetVal);
+        }
+        isAddrInitialized = true;
+    }
+}
+
+bool TryGetCameraMatrix(float& out_rightX, float& out_rightY, float& out_rightZ,
+                        float& out_forwardX, float& out_forwardY, float& out_forwardZ) {
+    InitCameraMatrixAddress();
+    
+    if (!call_GetMainCamera || !call_Camera_GetC2W) {
+        return false;
+    }
+    
+    __try {
+        void* pCamera = call_GetMainCamera();
+        if (pCamera && !IsBadReadPtr(pCamera, sizeof(void*))) {
+            Matrix4x4 mat;
+            call_Camera_GetC2W(&mat, pCamera, nullptr);
+
+            out_rightX = mat.m[0][0];
+            out_rightY = mat.m[1][0];
+            out_rightZ = mat.m[2][0];
+
+            out_forwardX = -mat.m[0][2];
+            out_forwardY = -mat.m[1][2];
+            out_forwardZ = -mat.m[2][2];
+            
+            return true;
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return false;
+    }
+    return false;
+}
+
 void UpdateFreeCamPhysics() {
     auto& cfg = Config::Get();
     ULONGLONG currentTick = GetTickCount64();
@@ -464,38 +511,8 @@ void UpdateFreeCamPhysics() {
     float rightX = 1, rightY = 0, rightZ = 0;
     bool gotMatrix = false;
     
-    static tCamera_GetC2W call_Camera_GetC2W = nullptr;
-    static bool isAddrInitialized = false;
-    
-    if (!isAddrInitialized) {
-        uintptr_t base = (uintptr_t)GetModuleHandle(NULL);
-        if (base) {
-            std::string offsetStr = Offsets::CameraGetC2WOffset;
-            uintptr_t offsetVal = 0;
-            std::stringstream ss;
-            ss << std::hex << offsetStr;
-            ss >> offsetVal;
-            call_Camera_GetC2W = (tCamera_GetC2W)(base + offsetVal);
-        }
-        isAddrInitialized = true;
-    }
-    
-    if (Config::Get().enable_free_cam_movement_fix && call_GetMainCamera && call_Camera_GetC2W) {
-        void* pCamera = call_GetMainCamera();
-        if (pCamera) {
-            Matrix4x4 mat;
-            call_Camera_GetC2W(&mat, pCamera, nullptr);
-            
-            rightX = mat.m[0][0];
-            rightY = mat.m[1][0];
-            rightZ = mat.m[2][0];
-            
-            forwardX = -mat.m[0][2];
-            forwardY = -mat.m[1][2];
-            forwardZ = -mat.m[2][2];
-            
-            gotMatrix = true;
-        }
+if (Config::Get().enable_free_cam_movement_fix) {
+        gotMatrix = TryGetCameraMatrix(rightX, rightY, rightZ, forwardX, forwardY, forwardZ);
     }
     
     float currentPower = FC_BASE_SPEED;
@@ -554,10 +571,11 @@ void UpdateFreeCamPhysics() {
     FreeCamState::camZ += FreeCamState::velZ;
 }
 
-void WINAPI hk_ClockPageOk(void* pThis) {
+void ClockPageOk_SafeLogic(void* pThis, bool& out_handled) {
+    out_handled = false;
     auto& cfg = Config::Get();
     auto orig = (tButtonClicked)o_ClockPageOk.load();
-    
+
     if (cfg.debug_console) {
         std::cout << "[Clock Debug] OK Button Hook Triggered!" << std::endl;
     }
@@ -565,7 +583,11 @@ void WINAPI hk_ClockPageOk(void* pThis) {
     if (cfg.enable_clock_speedup && p_ClockPageClose.load()) {
         auto closeBtnFunc = (tButtonClicked)p_ClockPageClose.load();
         
-        if (orig) {
+        if (!closeBtnFunc || IsBadReadPtr((void*)closeBtnFunc, 1)) {
+            return;
+        }
+
+        if (orig && !IsBadReadPtr((void*)orig, 1)) {
             orig(pThis); 
         }
         
@@ -573,20 +595,42 @@ void WINAPI hk_ClockPageOk(void* pThis) {
             std::cout << "[Clock Debug] Forcing Close UI..." << std::endl;
         }
         
-        SafeInvoke([&] {
-            closeBtnFunc(pThis);
-        });
+        closeBtnFunc(pThis);
         
-        return;
-    }
-    
-    if (orig) {
-        orig(pThis);
+        out_handled = true;
     }
 }
 
-void __fastcall hk_SetPos(void* pTransform, Vector3* pPos) {
-    if (!pTransform || !pPos) return;
+void WINAPI hk_ClockPageOk(void* pThis) {
+    auto orig = (tButtonClicked)o_ClockPageOk.load();
+    
+    if (!pThis || IsBadReadPtr(pThis, sizeof(void*))) {
+        if (orig && !IsBadReadPtr((void*)orig, 1)) {
+            __try { orig(pThis); } __except (EXCEPTION_EXECUTE_HANDLER) {}
+        }
+        return;
+    }
+
+    bool handled = false;
+    
+    __try {
+        ClockPageOk_SafeLogic(pThis, handled);
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        handled = false; 
+    }
+
+    if (!handled && orig && !IsBadReadPtr((void*)orig, 1)) {
+        __try {
+            orig(pThis);
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+        }
+    }
+}
+
+void SetPos_SafeLogic(void* pTransform, Vector3* pPos, bool& out_handled) {
+    out_handled = false;
 
     static int checkTimer = 0;
     checkTimer++;
@@ -594,9 +638,9 @@ void __fastcall hk_SetPos(void* pTransform, Vector3* pPos) {
         checkTimer = 0;
         if (call_GetMainCamera && call_GetTransform) {
             void* pCamInfo = call_GetMainCamera();
-            if (pCamInfo) {
+            if (pCamInfo && !IsBadReadPtr(pCamInfo, sizeof(void*))) {
                 void* realTrans = call_GetTransform(pCamInfo);
-                if (realTrans) {
+                if (realTrans && !IsBadReadPtr(realTrans, sizeof(void*))) {
                     FreeCamState::mainCameraTransform = realTrans;
                 }
             }
@@ -609,13 +653,11 @@ void __fastcall hk_SetPos(void* pTransform, Vector3* pPos) {
     }
     
     void* targetTransform = FreeCamState::mainCameraTransform;
-
     if (FreeCamState::isObjectSelectionMode && FreeCamState::currentTargetTransform != nullptr) {
         targetTransform = FreeCamState::currentTargetTransform;
     }
     
-    if (pTransform == targetTransform) {
-        
+    if (targetTransform && pTransform == targetTransform) {
         static void* lastControlledTarget = nullptr;
         
         if (targetTransform != lastControlledTarget) {
@@ -639,13 +681,32 @@ void __fastcall hk_SetPos(void* pTransform, Vector3* pPos) {
             myPos.z = FreeCamState::camZ;
             
             auto orig = (tSetPos)o_SetPos.load();
-            if(orig) orig(pTransform, &myPos);
+            if (orig) orig(pTransform, &myPos);
+            out_handled = true;
             return;
         }
     }
+}
 
+void __fastcall hk_SetPos(void* pTransform, Vector3* pPos) {
     auto orig = (tSetPos)o_SetPos.load();
-    if(orig) orig(pTransform, pPos);
+    
+    if (!pTransform || !pPos || IsBadReadPtr(pTransform, sizeof(void*)) || IsBadReadPtr(pPos, sizeof(Vector3))) {
+        if (orig) orig(pTransform, pPos);
+        return;
+    }
+
+    bool handled = false;
+    __try {
+        SetPos_SafeLogic(pTransform, pPos, handled);
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        handled = false;
+    }
+    
+    if (!handled && orig) {
+        orig(pTransform, pPos);
+    }
 }
 
 void UpdateHideUID() {
@@ -754,7 +815,7 @@ int WSAAPI hk_sendto(SOCKET s, const char* buf, int len, int flags, const struct
 
 void HandlePaimon() {
     auto& cfg = Config::Get();
-    if (!cfg.display_paimon) return;
+    if (!cfg.display_paimon_v1) return;
 
     auto FindString = (tFindString)p_FindString.load();
     auto FindGameObject = (tFindGameObject)p_FindGameObject.load();
@@ -782,23 +843,17 @@ void HandlePaimon() {
                 void* paimonObj = FindGameObject(paimonStr);
                 void* profileObj = FindGameObject(profileStr);
 
-                bool profileOpen = GetActive(profileObj);
-
-                static bool lastProfileState = !profileOpen;
-
-                if (profileOpen != lastProfileState) {
+                if (paimonObj && profileObj) {
+                    bool profileOpen = GetActive(profileObj);
+                    
                     if (profileOpen) {
-                        std::cout << "[Paimon] State: HIDDEN (Reason: Profile Menu is OPEN)" << std::endl;
+                        SetActive(paimonObj, false);
+                    } else {
+                        SetActive(paimonObj, true);
                     }
-                    else {
-                        std::cout << "[Paimon] State: VISIBLE (Reason: Profile Menu is CLOSED)" << std::endl;
-                    }
-                    lastProfileState = profileOpen;
                 }
-
-                SetActive(profileObj, !profileOpen);
             }
-            });
+        });
     }
 }
 
@@ -858,10 +913,23 @@ void WINAPI hk_ActorManagerCtor(void* pThis) {
 }
 
 void UpdatePaimonV2() {
+    static ULONGLONG lastLogTick = 0;
+    ULONGLONG currentTick = GetTickCount64();
+    bool canLog = (currentTick - lastLogTick > 2000);
+
     auto& cfg = Config::Get();
-    if (!cfg.display_paimon) return;
     
-    if (!g_ActorManagerInstance) return;
+    if (!cfg.display_paimon_v2 || cfg.display_paimon_v1) {
+        return; 
+    }
+    
+    if (!g_ActorManagerInstance) {
+        if (canLog) {
+            std::cout << "[PaimonV2_Blocker] g_ActorManagerInstance is NULL!" << std::endl;
+            lastLogTick = currentTick;
+        }
+        return;
+    }
     
     auto GetGlobalActor = (tGetGlobalActor)p_GetGlobalActor.load();
     auto GetActive = (tGetActive)p_GetActive.load();
@@ -870,15 +938,24 @@ void UpdatePaimonV2() {
     auto AvatarPaimonAppear = (tAvatarPaimonAppear)p_AvatarPaimonAppear.load();
     
     if (!GetGlobalActor || !GetActive || !FindString || !FindGameObject || !AvatarPaimonAppear) {
+        if (canLog) {
+            std::cout << "[PaimonV2_Blocker] Required function pointers are missing!" << std::endl
+                      << " -> GetGlobalActor: " << GetGlobalActor << std::endl
+                      << " -> GetActive: " << GetActive << std::endl
+                      << " -> FindString: " << FindString << std::endl
+                      << " -> FindGameObject: " << FindGameObject << std::endl
+                      << " -> AvatarPaimonAppear: " << AvatarPaimonAppear << std::endl;
+            lastLogTick = currentTick;
+        }
         return;
     }
     
-    static float lastCheckTime = 0.0f;
-    float currentTime = (float)clock() / CLOCKS_PER_SEC;
-    if (currentTime - lastCheckTime < 1.0f) {
+    static ULONGLONG lastCheckTick = 0;
+    if (currentTick - lastCheckTick < 2000) { 
         return;
     }
-    lastCheckTime = currentTime;
+    lastCheckTick = currentTick;
+    lastLogTick = currentTick;
     
     SafeInvoke([&] {
         static std::string paimonPath = XorString::decrypt(EncryptedStrings::PaimonPath);
@@ -889,23 +966,43 @@ void UpdatePaimonV2() {
         Il2CppString* diveStr = FindString(divePath.c_str());
         Il2CppString* beydStr = FindString(beydPath.c_str());
         
-        if (!paimonStr && !beydStr) return;
-        
         void* paimonObj = paimonStr ? FindGameObject(paimonStr) : nullptr;
         void* diveObj = diveStr ? FindGameObject(diveStr) : nullptr;
         void* beydObj = beydStr ? FindGameObject(beydStr) : nullptr;
         
-        if ((paimonObj && GetActive(paimonObj)) || (diveObj && GetActive(diveObj)) || (beydObj && GetActive(beydObj))) {
+        std::cout << "[PaimonV2_Log] Objects -> Normal: " << paimonObj 
+                  << " | Dive: " << diveObj 
+                  << " | Beyd: " << beydObj << std::endl;
+
+        if (!paimonObj && !diveObj && !beydObj) {
+            std::cout << "[PaimonV2_Log] All objects NULL. Scene has no Paimon." << std::endl;
+            return;
+        }
+        
+        bool isPaimonActive = paimonObj && GetActive(paimonObj);
+        bool isDiveActive = diveObj && GetActive(diveObj);
+        bool isBeydActive = beydObj && GetActive(beydObj);
+        
+        std::cout << "[PaimonV2_Log] ActiveState -> Normal: " << isPaimonActive 
+                  << " | Dive: " << isDiveActive 
+                  << " | Beyd: " << isBeydActive << std::endl;
+
+        if (isPaimonActive || isDiveActive || isBeydActive) {
+            std::cout << "[PaimonV2_Log] A Paimon is currently active. Aborting awake." << std::endl;
             return;
         }
         
         void* globalActor = GetGlobalActor(g_ActorManagerInstance);
+        std::cout << "[PaimonV2_Log] GlobalActor ptr: " << globalActor << std::endl;
+
         if (globalActor) {
+            std::cout << "[PaimonV2_Log] Executing AvatarPaimonAppear..." << std::endl;
             AvatarPaimonAppear(globalActor, nullptr, true);
+        } else {
+            std::cout << "[PaimonV2_Log] ERROR: GlobalActor is NULL." << std::endl;
         }
     });
 }
-
 void UpdateGamepadHotSwitch() {
     auto& cfg = Config::Get();
     if (!g_GamepadHotSwitchInitialized && cfg.enable_gamepad_hot_switch)
@@ -1205,6 +1302,7 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
         frameCounter = 0;
         UpdateHideUID();
         UpdateHideMainUI();
+        HandlePaimon();
         UpdatePaimonV2();
         UpdateGamepadHotSwitch();
         UpdateOpenMap();
@@ -1347,26 +1445,46 @@ auto hk_DisplayFog(__int64 a1, __int64 a2) -> __int64
     return orig ? orig(a1, a2) : 0;
 }
 
-void hk_SetupResinList(void* pThis) {
+void SetupResinList_SafeLogic(void* pThis) {
     auto cfg = Config::Get();
 
     tSetupResinList original = (tSetupResinList)o_SetupResinList.load();
-    original(pThis);
+    if (original) {
+        original(pThis);
+    }
 
-    Il2CppList<ULONG64>* resinList = *(Il2CppList<ULONG64>**)((intptr_t)pThis + 0x1F0);
-    std::vector<ULONG64> toRemove(5);
+    if (!pThis) {
+        return;
+    }
 
-    for (int i = 0; i < resinList->Count(); i++) {
+    Il2CppList<ULONG64>** pResinListPtr = (Il2CppList<ULONG64>**)((intptr_t)pThis + 0x1F0);
+    if (!pResinListPtr || IsBadReadPtr(pResinListPtr, sizeof(void*))) {
+        return;
+    }
+
+    Il2CppList<ULONG64>* resinList = *pResinListPtr;
+    if (!resinList || IsBadReadPtr(resinList, sizeof(Il2CppList<ULONG64>))) {
+        return;
+    }
+
+    int count = resinList->Count();
+    if (count <= 0 || count > 1000) { 
+        return;
+    }
+
+    std::vector<ULONG64> toRemove;
+
+    for (int i = 0; i < count; i++) {
         ULONG64 item = resinList->Get(i);
 
         UINT32 hight = (UINT32)(item >> 32);
         UINT32 low = (UINT32)(item & 0xFFFFFFFF);
 
-        if ((hight == 106 || low == 106) && !cfg.ResinItem000106
-            || (hight == 201 || low == 201) && !cfg.ResinItem000201
-            || (hight == 107009 || low == 107009) && !cfg.ResinItem107009
-            || (hight == 107012 || low == 107012) && !cfg.ResinItem107012
-            || (hight == 220007 || low == 220007) && !cfg.ResinItem220007)
+        if (((hight == 106 || low == 106) && !cfg.ResinItem000106) ||
+            ((hight == 201 || low == 201) && !cfg.ResinItem000201) ||
+            ((hight == 107009 || low == 107009) && !cfg.ResinItem107009) ||
+            ((hight == 107012 || low == 107012) && !cfg.ResinItem107012) ||
+            ((hight == 220007 || low == 220007) && !cfg.ResinItem220007))
         {
             toRemove.push_back(item);
         }
@@ -1375,6 +1493,15 @@ void hk_SetupResinList(void* pThis) {
     for (ULONG64 item : toRemove) {
         if (item == 0) continue;
         resinList->Remove(item);
+    }
+}
+
+void __fastcall hk_SetupResinList(void* pThis) {
+    __try {
+        SetupResinList_SafeLogic(pThis);
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        return;
     }
 }
 
@@ -1396,13 +1523,24 @@ bool Hooks::Init() {
     bool isOS = (path.find("genshinimpact.exe") != std::string::npos);
     Offsets::InitOffsets(isOS);
     
-    void* getActiveAddr = GetGetActiveAddr();
+    void* getActiveAddr = nullptr;
+    void* activeScan = Scanner::ScanMainMod(XorString::decrypt(EncryptedPatterns::GetActive));
+    if (activeScan) {
+        getActiveAddr = Scanner::ResolveRelative(activeScan, 1, 5);
+        if (getActiveAddr) std::cout << "[SCAN] GetActive resolved via signature.\n";
+    }
+    if (!getActiveAddr) {
+        getActiveAddr = GetGetActiveAddr();
+        if (getActiveAddr) std::cout << "[SCAN] GetActive resolved via offset fallback.\n";
+    }
+
     if (getActiveAddr) {
         p_GetActive.store(getActiveAddr);
         LogOffset("GameObject.get_active", getActiveAddr, getActiveAddr);
     } else {
         std::cout << "[ERR] Failed to resolve GetActive address" << '\n';
     }
+
     if (Config::Get().dump_offsets) {
         std::string filePath = GetOwnDllDir() + "\\offsets.txt";
         std::ofstream file(filePath, std::ios::trunc);
@@ -1412,8 +1550,11 @@ bool Hooks::Init() {
             file << "Generated on module init." << '\n' << '\n';
         }
     }
+
     if (MH_Initialize() != MH_OK) return false;
- //   HOOK_REL("GameUpdate", EncryptedPatterns::GameUpdate, hk_GameUpdate, o_GameUpdate);
+    
+    // HOOK_DIR("GameUpdate", EncryptedPatterns::GameUpdate, hk_GameUpdate, o_GameUpdate);
+
     HOOK_REL("GetFrameCount", EncryptedPatterns::GetFrameCount, hk_GetFrameCount, o_GetFrameCount);
     SCAN_REL("SetFrameCount", EncryptedPatterns::SetFrameCount, o_SetFrameCount);
     HOOK_DIR("ChangeFOV", EncryptedPatterns::ChangeFOV, hk_ChangeFov, o_ChangeFov);
@@ -1435,81 +1576,73 @@ bool Hooks::Init() {
     SCAN_REL("SetSyncCount", EncryptedPatterns::SetSyncCount, o_SetSyncCount);
     SCAN_DIR("CheckCanOpenMap", EncryptedPatterns::CheckCanOpenMap, p_CheckCanOpenMap);
     HOOK_REL("SetupResinList", EncryptedPatterns::SetupResinList, hk_SetupResinList, o_SetupResinList);
-//  SCAN_DIR("ClockPageClose", EncryptedPatterns::ClockPageClose, p_ClockPageClose);
-//  HOOK_DIR("ClockPageOk", EncryptedPatterns::ClockPageOk, hk_ClockPageOk, o_ClockPageOk);
-
-    
+    //  SCAN_DIR("ClockPageClose", EncryptedPatterns::ClockPageClose, p_ClockPageClose);
+    //  HOOK_DIR("ClockPageOk", EncryptedPatterns::ClockPageOk, hk_ClockPageOk, o_ClockPageOk);
 
     DWORD oldProtect;
     VirtualProtect(p_CheckCanOpenMap.load(), 5, PAGE_EXECUTE_READWRITE, &oldProtect);
-{
-    HMODULE hMod = GetModuleHandle(NULL);
-    if (hMod) {
-        uintptr_t base = (uintptr_t)hMod;
-        
-        auto decryptOffset = [](const auto& encPattern) -> uintptr_t {
-            std::string hexStr = XorString::decrypt(encPattern);
-            uintptr_t val = 0;
-            std::stringstream ss;
-            ss << std::hex << hexStr;
-            ss >> val;
-            return val;
-        };
-        
-        uintptr_t offsetCtor     = StringToAddr(Offsets::ActorManagerCtorOffset);
-        void* actorMgrCtor = (void*)(base + offsetCtor);
-        MH_STATUS status1 = MH_CreateHook(actorMgrCtor, (void*)hk_ActorManagerCtor, (void**)&o_ActorManagerCtor);
-        if (status1 == MH_OK) {
-            MH_EnableHook(actorMgrCtor);
-            std::cout << "[SCAN] ActorManager.ctor hooked at: 0x" << std::hex << offsetCtor << std::dec << '\n';
-        } else {
-            std::cout << "[ERR] Failed to hook ActorManager.ctor. MH_STATUS: " << status1 << '\n';
-        }
-        
-        uintptr_t offsetGlobal   = StringToAddr(Offsets::GetGlobalActorOffset);
-        void* getGlobalActorAddr = (void*)(base + offsetGlobal);
-        p_GetGlobalActor.store(getGlobalActorAddr);
-        LogOffset("ActorManager.GetGlobalActor", getGlobalActorAddr, getGlobalActorAddr);
-        std::cout << "[SCAN] GetGlobalActor at: 0x" << std::hex << offsetGlobal << std::dec << '\n';
-        
-        uintptr_t offsetPaimon   = StringToAddr(Offsets::AvatarPaimonAppearOffset);
-        void* avatarPaimonAppearAddr = (void*)(base + offsetPaimon);
-        p_AvatarPaimonAppear.store(avatarPaimonAppearAddr);
-        LogOffset("GlobalActor.AvatarPaimonAppear", avatarPaimonAppearAddr, avatarPaimonAppearAddr);
-        std::cout << "[SCAN] AvatarPaimonAppear at: 0x" << std::hex << offsetPaimon << std::dec << '\n';
 
-        uintptr_t offsetClockOk = StringToAddr(Offsets::ClockPageOkOffset);
-        void* clockOkAddr = (void*)(base + offsetClockOk);
-        if (MH_CreateHook(clockOkAddr, (void*)hk_ClockPageOk, (void**)&o_ClockPageOk) == MH_OK) {
-            // 稍后在底部的 MH_EnableHook(MH_ALL_HOOKS) 中会被统一启用
-            std::cout << "[SCAN] ClockPageOk hooked via offset at: 0x" << std::hex << offsetClockOk << std::dec << '\n';
-        } else {
-            std::cout << "[ERR] Failed to hook ClockPageOk via offset.\n";
-        }
-
-        uintptr_t offsetClockClose = StringToAddr(Offsets::ClockPageCloseOffset);
-        void* clockCloseAddr = (void*)(base + offsetClockClose);
-        p_ClockPageClose.store(clockCloseAddr);
-        std::cout << "[SCAN] ClockPageClose resolved via offset at: 0x" << std::hex << offsetClockClose << std::dec << '\n';
-        // -----------------------------------------------------------
-        
-    } else {
-        std::cout << "[ERR] Critical: GetModuleHandle failed!" << '\n';
-    }
-}
     {
         HMODULE hMod = GetModuleHandle(NULL);
         if (hMod) {
             uintptr_t base = (uintptr_t)hMod;
             
-            auto decryptOffset = [](const auto& encPattern) -> uintptr_t {
-                std::string hexStr = XorString::decrypt(encPattern);
-                uintptr_t val = 0;
-                std::stringstream ss;
-                ss << std::hex << hexStr;
-                ss >> val;
-                return val;
-            };
+            void* actorMgrCtor = nullptr;
+            uintptr_t offsetCtor = StringToAddr(Offsets::ActorManagerCtorOffset);
+            
+            if (offsetCtor > 0) {
+                actorMgrCtor = (void*)(base + offsetCtor);
+                std::cout << "[SCAN] ActorManager.ctor resolved via explicit offset: 0x" << std::hex << offsetCtor << std::dec << '\n';
+            } else {
+                void* actorScan = Scanner::ScanMainMod(XorString::decrypt(EncryptedPatterns::ActorManagerCtor));
+                if (actorScan) {
+                    actorMgrCtor = Scanner::ResolveRelative(actorScan, 1, 5);
+                    if (actorMgrCtor) std::cout << "[SCAN] ActorManager.ctor resolved via signature fallback\n";
+                }
+            }
+
+            if (actorMgrCtor) {
+                MH_STATUS status1 = MH_CreateHook(actorMgrCtor, (void*)hk_ActorManagerCtor, (void**)&o_ActorManagerCtor);
+                if (status1 == MH_OK) {
+                    std::cout << "[SCAN] ActorManager.ctor hook created.\n";
+                } else {
+                    std::cout << "[ERR] Failed to hook ActorManager.ctor. MH_STATUS: " << status1 << '\n';
+                }
+            }
+
+            uintptr_t offsetGlobal   = StringToAddr(Offsets::GetGlobalActorOffset);
+            void* getGlobalActorAddr = (void*)(base + offsetGlobal);
+            p_GetGlobalActor.store(getGlobalActorAddr);
+            LogOffset("ActorManager.GetGlobalActor", getGlobalActorAddr, getGlobalActorAddr);
+            std::cout << "[SCAN] GetGlobalActor at: 0x" << std::hex << offsetGlobal << std::dec << '\n';
+            
+            uintptr_t offsetPaimon   = StringToAddr(Offsets::AvatarPaimonAppearOffset);
+            void* avatarPaimonAppearAddr = (void*)(base + offsetPaimon);
+            p_AvatarPaimonAppear.store(avatarPaimonAppearAddr);
+            LogOffset("GlobalActor.AvatarPaimonAppear", avatarPaimonAppearAddr, avatarPaimonAppearAddr);
+            std::cout << "[SCAN] AvatarPaimonAppear at: 0x" << std::hex << offsetPaimon << std::dec << '\n';
+
+            uintptr_t offsetClockOk = StringToAddr(Offsets::ClockPageOkOffset);
+            void* clockOkAddr = (void*)(base + offsetClockOk);
+            if (MH_CreateHook(clockOkAddr, (void*)hk_ClockPageOk, (void**)&o_ClockPageOk) == MH_OK) {
+                std::cout << "[SCAN] ClockPageOk hooked via offset at: 0x" << std::hex << offsetClockOk << std::dec << '\n';
+            } else {
+                std::cout << "[ERR] Failed to hook ClockPageOk via offset.\n";
+            }
+
+            uintptr_t offsetClockClose = StringToAddr(Offsets::ClockPageCloseOffset);
+            void* clockCloseAddr = (void*)(base + offsetClockClose);
+            p_ClockPageClose.store(clockCloseAddr);
+            std::cout << "[SCAN] ClockPageClose resolved via offset at: 0x" << std::hex << offsetClockClose << std::dec << '\n';
+        } else {
+            std::cout << "[ERR] Critical: GetModuleHandle failed!" << '\n';
+        }
+    }
+
+    {
+        HMODULE hMod = GetModuleHandle(NULL);
+        if (hMod) {
+            uintptr_t base = (uintptr_t)hMod;
 
             uintptr_t offsetGetMain  = StringToAddr(Offsets::GetMainCameraOffset);
             uintptr_t offsetGetTrans = StringToAddr(Offsets::GetTransformOffset);
@@ -1528,7 +1661,6 @@ bool Hooks::Init() {
                 if (addr_SetPos) {
                     if (MH_CreateHook((void*)addr_SetPos, (void*)hk_SetPos, (void**)&o_SetPos) == MH_OK) {
                         std::cout << "   -> FreeCam SetPos Hook Ready." << '\n';
-                        MH_EnableHook((void*)addr_SetPos); 
                     } else {
                         std::cout << "   -> [ERR] FreeCam SetPos Hook Failed." << '\n';
                     }
@@ -1553,6 +1685,7 @@ bool Hooks::Init() {
     }
     return true;
 }
+
 
 bool Hooks::IsGameUpdateInit() { return o_GetFrameCount.load() != nullptr; }
 void Hooks::RequestOpenCraft() { g_RequestCraft.store(true); }

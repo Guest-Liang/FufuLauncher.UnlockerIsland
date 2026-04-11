@@ -82,7 +82,6 @@
     </ItemGroup>
     <ItemGroup>
         <ClInclude Include="Launcher.h" />
-        <ClInclude Include="SecurityUtils.h" />
     </ItemGroup>
     <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
     <ImportGroup Label="ExtensionTargets">

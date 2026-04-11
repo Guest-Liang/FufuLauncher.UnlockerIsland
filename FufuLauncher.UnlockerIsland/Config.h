@@ -55,7 +55,8 @@ struct ModConfig {
 
     bool hide_main_ui = false;
 
-    bool display_paimon = false;
+    bool display_paimon_v1 = false;
+    bool display_paimon_v2 = false;
 
     bool enable_free_cam = false;
     
