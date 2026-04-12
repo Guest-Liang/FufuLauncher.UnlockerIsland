@@ -250,6 +250,7 @@ namespace Offsets {
     std::string GetText;
     std::string ClockPageOkOffset;
     std::string ClockPageCloseOffset;
+    std::string ResinListOffset;
 
     std::string ParseOffsetFromJson(const std::string& jsonStr, const std::string& region, const std::string& key, const std::string& fallback) {
         size_t regionStart = jsonStr.find("\"" + region + "\"");
@@ -308,6 +309,7 @@ namespace Offsets {
             GetText = XorString::decrypt(EncryptedPatterns::OS::GetText);
             ClockPageOkOffset = XorString::decrypt(EncryptedPatterns::OS::ClockPageOkOffset);
             ClockPageCloseOffset = XorString::decrypt(EncryptedPatterns::OS::ClockPageCloseOffset);
+            ResinListOffset = XorString::decrypt(EncryptedPatterns::OS::ResinListOffset);
             std::cout << "[INFO] Pre-initialized Global (OS) Offsets from hardcode" << std::endl;
         } else {
             GetActiveOffset = XorString::decrypt(EncryptedPatterns::CN::GetActiveOffset);
@@ -322,6 +324,7 @@ namespace Offsets {
             GetText = XorString::decrypt(EncryptedPatterns::CN::GetText);
             ClockPageOkOffset = XorString::decrypt(EncryptedPatterns::CN::ClockPageOkOffset);
             ClockPageCloseOffset = XorString::decrypt(EncryptedPatterns::CN::ClockPageCloseOffset);
+            ResinListOffset = XorString::decrypt(EncryptedPatterns::CN::ResinListOffset);
             std::cout << "[INFO] Pre-initialized China (CN) Offsets from hardcode" << std::endl;
         }
         
@@ -349,6 +352,7 @@ namespace Offsets {
                 GetText = ParseOffsetFromJson(jsonContent, region, "GetText", GetText);
                 ClockPageOkOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageOkOffset", ClockPageOkOffset);
                 ClockPageCloseOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageCloseOffset", ClockPageCloseOffset);
+                ResinListOffset = ParseOffsetFromJson(jsonContent, region, "ResinListOffset", ResinListOffset);
 
                 std::cout << "[INFO] Offsets initialized. Source logic overridden by local offset.json (Region: " << region << ")" << std::endl;
             } else {
@@ -1351,21 +1355,15 @@ void UpdateTitleWatermark() {
 }
 
 void DoCraftLogic() {
-    __try {
-        auto findStr = (tFindString)p_FindString.load();
-        auto partner = (tCraftPartner)p_CraftPartner.load();
-        
-        if (!findStr || IsBadReadPtr((void*)findStr, sizeof(void*))) return;
-        if (!partner || IsBadReadPtr((void*)partner, sizeof(void*))) return;
-
-        std::string sPage = XorString::decrypt(EncryptedStrings::SynthesisPage);
-        Il2CppString* str = findStr(sPage.c_str());
-        
-        if (str && !IsBadReadPtr(str, sizeof(Il2CppString))) {
-            partner(str, nullptr, nullptr, nullptr, nullptr);
-        }
-    } 
-    __except (EXCEPTION_EXECUTE_HANDLER) {
+    auto findStr = (tFindString)p_FindString.load();
+    auto partner = (tCraftPartner)p_CraftPartner.load();
+    if (IsValid(findStr) && IsValid(partner)) {
+        SafeInvoke([&]
+        {
+            std::string sPage = XorString::decrypt(EncryptedStrings::SynthesisPage);
+            Il2CppString* str = findStr(sPage.c_str());
+            if (str) partner(str, nullptr, nullptr, nullptr, nullptr);
+        });
     }
 }
 
@@ -1482,49 +1480,29 @@ bool WINAPI hk_EventCamera(void* a, void* b) {
 }
 
 void WINAPI hk_CraftEntry(void* _this) {
-    __try {
-        if (Config::Get().enable_redirect_craft_override) {
-            DoCraftLogic();
-            return;
-        }
-        
-        auto orig = (tCraftEntry)o_CraftEntry.load();
-        
-        if (orig && !IsBadReadPtr((void*)orig, sizeof(void*))) {
-            if (_this && !IsBadReadPtr(_this, sizeof(void*))) {
-                orig(_this);
-            }
-        }
-    } 
-    __except (EXCEPTION_EXECUTE_HANDLER) {
+    if (Config::Get().enable_redirect_craft_override) {
+        DoCraftLogic();
+        return;
     }
+    auto orig = (tCraftEntry)o_CraftEntry.load();
+    if (orig) orig(_this);
 }
 
 void WINAPI hk_OpenTeam() {
-    __try {
-        if (Config::Get().enable_remove_team_anim) {
-            auto check = (tCheckCanEnter)p_CheckCanEnter.load();
-            auto openPage = (tOpenTeamPage)p_OpenTeamPage.load();
-            
-            if (check && !IsBadReadPtr((void*)check, sizeof(void*)) && 
-                openPage && !IsBadReadPtr((void*)openPage, sizeof(void*))) {
-                
-                bool canEnter = check();
-                if (canEnter) {
-                    openPage(false);
-                    return;
-                }
-                }
+    if (Config::Get().enable_remove_team_anim) {
+        auto check = (tCheckCanEnter)p_CheckCanEnter.load();
+        auto openPage = (tOpenTeamPage)p_OpenTeamPage.load();
+        if (IsValid(check) && IsValid(openPage)) {
+            bool canEnter = false;
+            SafeInvoke([&] { canEnter = check(); });
+            if (canEnter) {
+                SafeInvoke([&] { openPage(false); });
+                return;
+            }
         }
-        
-        auto orig = (tOpenTeam)o_OpenTeam.load();
-        
-        if (orig && !IsBadReadPtr((void*)orig, sizeof(void*))) {
-            orig();
-        }
-    } 
-    __except (EXCEPTION_EXECUTE_HANDLER) {
     }
+    auto orig = (tOpenTeam)o_OpenTeam.load();
+    if (orig) orig();
 }
 
 void WINAPI hk_SetActive(void* pThis, bool active) {
@@ -1579,7 +1557,16 @@ void SetupResinList_SafeLogic(void* pThis) {
         return;
     }
 
-    Il2CppList<ULONG64>** pResinListPtr = (Il2CppList<ULONG64>**)((intptr_t)pThis + 0x1F0);
+    static intptr_t cachedResinListOffset = 0;
+    if (cachedResinListOffset == 0) {
+        std::stringstream ss;
+        ss << std::hex << Offsets::ResinListOffset; 
+        ss >> cachedResinListOffset;
+        if (cachedResinListOffset == 0) cachedResinListOffset = 0x230; 
+    }
+
+    Il2CppList<ULONG64>** pResinListPtr = (Il2CppList<ULONG64>**)((intptr_t)pThis + cachedResinListOffset);
+    
     if (!pResinListPtr || IsBadReadPtr(pResinListPtr, sizeof(void*))) {
         return;
     }

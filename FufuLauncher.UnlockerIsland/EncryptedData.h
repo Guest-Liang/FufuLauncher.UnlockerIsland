@@ -84,6 +84,8 @@ namespace EncryptedPatterns {
         inline constexpr auto ClockPageOkOffset = XorString::encrypt("118DD5E0");
 
         inline constexpr auto ClockPageCloseOffset = XorString::encrypt("6E76350");
+
+        inline constexpr auto ResinListOffset = XorString::encrypt("230");
     }
     
     namespace OS {
@@ -111,6 +113,8 @@ namespace EncryptedPatterns {
         inline constexpr auto ClockPageOkOffset = XorString::encrypt("118D08E0");
 
         inline constexpr auto ClockPageCloseOffset = XorString::encrypt("6E74C70");
+
+        inline constexpr auto ResinListOffset = XorString::encrypt("220");
     }
 }
 
@@ -127,6 +131,7 @@ namespace Offsets {
     extern std::string GetText;
     extern std::string ClockPageOkOffset;
     extern std::string ClockPageCloseOffset;
+    extern std::string ResinListOffset;
 
     void InitOffsets(bool isOS);
 }
