@@ -1,4 +1,4 @@
-#include "HookWndProc.h"
+﻿#include "HookWndProc.h"
 #include "GamepadHotSwitch.h"
 #include "Config.h"
 #include "Scanner.h"
@@ -6,6 +6,7 @@
 #include <iostream>
 #include <commctrl.h>
 #pragma comment(lib, "comctl32.lib")
+#include <sstream>
 
 static HWND g_hUnityWindow = nullptr;
 static bool g_subclassInstalled = false;
@@ -19,18 +20,33 @@ LRESULT CALLBACK WindowSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 {
     switch (uMsg)
     {
-    case WM_MOUSEMOVE:
     case WM_LBUTTONDOWN:
-    case WM_LBUTTONUP:
     case WM_RBUTTONDOWN:
-    case WM_RBUTTONUP:
     case WM_MBUTTONDOWN:
-    case WM_MBUTTONUP:
     case WM_MOUSEWHEEL:
-    case WM_MOUSEHWHEEL:
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+    case WM_INPUT:
         if (GamepadHotSwitch::GetInstance().IsEnabled())
         {
-            GamepadHotSwitch::GetInstance().ProcessWindowMessage(uMsg, wParam, lParam);
+            if (uMsg == WM_INPUT)
+            {
+                UINT dwSize = 40;
+                static BYTE lpb[40];
+                if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER)) != (UINT)-1)
+                {
+                    RAWINPUT* raw = (RAWINPUT*)lpb;
+                    if (raw->header.dwType == RIM_TYPEMOUSE && 
+                       (raw->data.mouse.lLastX != 0 || raw->data.mouse.lLastY != 0))
+                    {
+                        GamepadHotSwitch::GetInstance().ProcessWindowMessage(uMsg, wParam, lParam);
+                    }
+                }
+            }
+            else
+            {
+                GamepadHotSwitch::GetInstance().ProcessWindowMessage(uMsg, wParam, lParam);
+            }
         }
         break;
         
@@ -61,7 +77,8 @@ void HandleSwitchToGamepad()
         }
         __except (EXCEPTION_EXECUTE_HANDLER)
         {
-
+            if (Config::Get().debug_console)
+                std::cout << "[HookWndProc] CRITICAL EXCEPTION in SwitchInputDeviceToJoypad! Code: 0x" << std::hex << GetExceptionCode() << std::dec << '\n';
         }
     }
     else
@@ -81,18 +98,21 @@ void HandleSwitchToKeyboardMouse()
         __try
         {
             if (Config::Get().debug_console)
-                std::cout << "[HookWndProc] Switched to keyboard/mouse input" << '\n';
+                std::cout << "[HookWndProc] Attempting to switch to keyboard/mouse input..." << '\n';
             switchInput(nullptr);
+            if (Config::Get().debug_console)
+                std::cout << "[HookWndProc] Switched to keyboard/mouse input successfully" << '\n';
         }
         __except (EXCEPTION_EXECUTE_HANDLER)
         {
-
+            if (Config::Get().debug_console)
+                std::cout << "[HookWndProc] CRITICAL EXCEPTION in SwitchInputDeviceToKeyboard! Code: 0x" << std::hex << GetExceptionCode() << std::dec << '\n';
         }
     }
     else
     {
         if (Config::Get().debug_console)
-            std::cout << "[HookWndProc] switchInputDeviceToTouchScreen function not available" << '\n';
+            std::cout << "[HookWndProc] switchInputDeviceToKeyboard function not available" << '\n';
     }
 }
  
@@ -106,6 +126,14 @@ bool InstallWindowSubclass()
     if (SetWindowSubclass(g_hUnityWindow, WindowSubclassProc, g_subclassId, 0))
     {
         g_subclassInstalled = true;
+        
+        RAWINPUTDEVICE Rid[1];
+        Rid[0].usUsagePage = 0x01; 
+        Rid[0].usUsage = 0x02;
+        Rid[0].dwFlags = RIDEV_INPUTSINK;   
+        Rid[0].hwndTarget = g_hUnityWindow;
+        RegisterRawInputDevices(Rid, 1, sizeof(Rid[0]));
+
         if (Config::Get().debug_console)
             std::cout << "[HookWndProc] Window subclass installed successfully" << '\n';
         return true;
@@ -161,32 +189,69 @@ HWND GetUnityMainWindow()
     return g_hUnityWindow;
 }
 
+static uintptr_t StringToAddr(const std::string& hexStr) {
+    if (hexStr.empty()) return 0;
+    uintptr_t addr = 0;
+    std::stringstream ss;
+    ss << std::hex << hexStr;
+    ss >> addr;
+    return addr;
+}
+
 void InitializeWndProcHooks()
 {
-    if (!switchInputDeviceToJoypad)
-    {
-        std::string pattern = XorString::decrypt(EncryptedPatterns::SwitchInputDeviceToJoypad);
-        switchInputDeviceToJoypad = Scanner::ScanMainMod(pattern.c_str());
-        if (Config::Get().debug_console)
-        {
-            if (switchInputDeviceToJoypad)
-                std::cout << "[HookWndProc] Found SwitchInputDeviceToJoypad at: " << switchInputDeviceToJoypad << '\n';
-            else
-                std::cout << "[HookWndProc] Failed to find SwitchInputDeviceToJoypad" << '\n';
-        }
-    }
+    uintptr_t base = (uintptr_t)GetModuleHandle(NULL);
     
-    if (!switchInputDeviceToKeyboard)
+    if (base)
     {
-        std::string pattern = XorString::decrypt(EncryptedPatterns::SwitchInputDeviceToKeyboard);
-        switchInputDeviceToKeyboard = Scanner::ScanMainMod(pattern.c_str());
-        if (Config::Get().debug_console)
+        if (!switchInputDeviceToJoypad)
         {
-            if (switchInputDeviceToKeyboard)
-                std::cout << "[HookWndProc] Found SwitchInputDeviceToKeyboard at: " << switchInputDeviceToKeyboard <<
-                    '\n';
+            uintptr_t offset = StringToAddr(Offsets::JoypadInputOffset);
+            if (offset > 0)
+            {
+                switchInputDeviceToJoypad = (LPVOID)(base + offset);
+                if (Config::Get().debug_console)
+                    std::cout << "[HookWndProc] Found SwitchInputDeviceToJoypad via offset at: " << switchInputDeviceToJoypad << '\n';
+            }
             else
-                std::cout << "[HookWndProc] Failed to find SwitchInputDeviceToKeyboard" << '\n';
+            {
+                std::string pattern = XorString::decrypt(EncryptedPatterns::SwitchInputDeviceToJoypad);
+                switchInputDeviceToJoypad = Scanner::ScanMainMod(pattern.c_str());
+                if (Config::Get().debug_console)
+                    std::cout << "[HookWndProc] Found SwitchInputDeviceToJoypad via pattern at: " << switchInputDeviceToJoypad << '\n';
+            }
+        }
+        if (!switchInputDeviceToKeyboard)
+        {
+            uintptr_t offset = StringToAddr(Offsets::KeyboardMouseInputOffset);
+            if (offset > 0)
+            {
+                switchInputDeviceToKeyboard = (LPVOID)(base + offset);
+                if (Config::Get().debug_console)
+                    std::cout << "[HookWndProc] Found SwitchInputDeviceToKeyboard via offset at: " << switchInputDeviceToKeyboard << '\n';
+            }
+            else
+            {
+                std::string pattern = XorString::decrypt(EncryptedPatterns::SwitchInputDeviceToKeyboard);
+                switchInputDeviceToKeyboard = Scanner::ScanMainMod(pattern.c_str());
+                if (Config::Get().debug_console)
+                    std::cout << "[HookWndProc] Found SwitchInputDeviceToKeyboard via pattern at: " << switchInputDeviceToKeyboard << '\n';
+            }
+        }
+        if (!switchInputDeviceToTouchScreen)
+        {
+            uintptr_t offset = StringToAddr(Offsets::TouchInputOffset);
+            if (offset > 0)
+            {
+                switchInputDeviceToTouchScreen = (LPVOID)(base + offset);
+                if (Config::Get().debug_console)
+                    std::cout << "[HookWndProc] Found SwitchInputDeviceToTouchScreen via offset at: " << switchInputDeviceToTouchScreen << '\n';
+            }
+            else
+            {
+                std::string pattern = XorString::decrypt(EncryptedPatterns::SwitchInputDeviceToTouchScreen);
+                switchInputDeviceToTouchScreen = Scanner::ScanMainMod(pattern.c_str());
+            }
         }
     }
     

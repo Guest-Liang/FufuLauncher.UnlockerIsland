@@ -69,7 +69,7 @@ namespace EncryptedPatterns {
         // MoleMole.BaseActor.AvatarPaimonAppear
         inline constexpr auto AvatarPaimonAppearOffset = XorString::encrypt("11469590");
         // UnityEngine.Camera.get_main
-        inline constexpr auto GetMainCameraOffset = XorString::encrypt("16C99810");
+        inline constexpr auto GetMainCameraOffset = XorString::encrypt("16C99800");
         // UnityEngine.Component.get_transform
         inline constexpr auto GetTransformOffset = XorString::encrypt("16CAA180");
         // UnityEngine.Transform.INTERNAL_set_position
@@ -86,6 +86,12 @@ namespace EncryptedPatterns {
         inline constexpr auto ClockPageCloseOffset = XorString::encrypt("6E76350");
 
         inline constexpr auto ResinListOffset = XorString::encrypt("230");
+
+        inline constexpr auto TouchInputOffset = XorString::encrypt("DD948B0");
+        
+        inline constexpr auto KeyboardMouseInputOffset = XorString::encrypt("DD8D7F0"); 
+
+        inline constexpr auto JoypadInputOffset = XorString::encrypt("DD94A60");
     }
     
     namespace OS {
@@ -115,6 +121,12 @@ namespace EncryptedPatterns {
         inline constexpr auto ClockPageCloseOffset = XorString::encrypt("6E74C70");
 
         inline constexpr auto ResinListOffset = XorString::encrypt("220");
+
+        inline constexpr auto TouchInputOffset = XorString::encrypt("DD9C9B0");
+        
+        inline constexpr auto KeyboardMouseInputOffset = XorString::encrypt("DDA7870");
+        
+        inline constexpr auto JoypadInputOffset = XorString::encrypt("DD85A10");
     }
 }
 
@@ -132,6 +144,9 @@ namespace Offsets {
     extern std::string ClockPageOkOffset;
     extern std::string ClockPageCloseOffset;
     extern std::string ResinListOffset;
+    extern std::string TouchInputOffset;
+    extern std::string KeyboardMouseInputOffset;
+    extern std::string JoypadInputOffset;
 
     void InitOffsets(bool isOS);
 }

@@ -70,6 +70,8 @@ struct ModConfig {
 
     bool hide_grass = false;
 
+    bool hide_grass_indiscriminate = false;
+
     bool  ResinItem000106;
     bool  ResinItem000201;
     bool  ResinItem107009;

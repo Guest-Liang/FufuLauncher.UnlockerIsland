@@ -251,6 +251,9 @@ namespace Offsets {
     std::string ClockPageOkOffset;
     std::string ClockPageCloseOffset;
     std::string ResinListOffset;
+    std::string TouchInputOffset;
+    std::string KeyboardMouseInputOffset;
+    std::string JoypadInputOffset;
 
     std::string ParseOffsetFromJson(const std::string& jsonStr, const std::string& region, const std::string& key, const std::string& fallback) {
         size_t regionStart = jsonStr.find("\"" + region + "\"");
@@ -310,6 +313,9 @@ namespace Offsets {
             ClockPageOkOffset = XorString::decrypt(EncryptedPatterns::OS::ClockPageOkOffset);
             ClockPageCloseOffset = XorString::decrypt(EncryptedPatterns::OS::ClockPageCloseOffset);
             ResinListOffset = XorString::decrypt(EncryptedPatterns::OS::ResinListOffset);
+            TouchInputOffset = XorString::decrypt(EncryptedPatterns::OS::TouchInputOffset);
+            KeyboardMouseInputOffset = XorString::decrypt(EncryptedPatterns::OS::KeyboardMouseInputOffset);
+            JoypadInputOffset = XorString::decrypt(EncryptedPatterns::OS::JoypadInputOffset);
             std::cout << "[INFO] Pre-initialized Global (OS) Offsets from hardcode" << std::endl;
         } else {
             GetActiveOffset = XorString::decrypt(EncryptedPatterns::CN::GetActiveOffset);
@@ -325,6 +331,9 @@ namespace Offsets {
             ClockPageOkOffset = XorString::decrypt(EncryptedPatterns::CN::ClockPageOkOffset);
             ClockPageCloseOffset = XorString::decrypt(EncryptedPatterns::CN::ClockPageCloseOffset);
             ResinListOffset = XorString::decrypt(EncryptedPatterns::CN::ResinListOffset);
+            TouchInputOffset = XorString::decrypt(EncryptedPatterns::CN::TouchInputOffset);
+            KeyboardMouseInputOffset = XorString::decrypt(EncryptedPatterns::CN::KeyboardMouseInputOffset);
+            JoypadInputOffset = XorString::decrypt(EncryptedPatterns::CN::JoypadInputOffset);
             std::cout << "[INFO] Pre-initialized China (CN) Offsets from hardcode" << std::endl;
         }
         
@@ -353,6 +362,9 @@ namespace Offsets {
                 ClockPageOkOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageOkOffset", ClockPageOkOffset);
                 ClockPageCloseOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageCloseOffset", ClockPageCloseOffset);
                 ResinListOffset = ParseOffsetFromJson(jsonContent, region, "ResinListOffset", ResinListOffset);
+                TouchInputOffset = ParseOffsetFromJson(jsonContent, region, "TouchInput", TouchInputOffset);
+                KeyboardMouseInputOffset = ParseOffsetFromJson(jsonContent, region, "KeyboardMouseInput", KeyboardMouseInputOffset);
+                JoypadInputOffset = ParseOffsetFromJson(jsonContent, region, "JoypadInput", JoypadInputOffset);
 
                 std::cout << "[INFO] Offsets initialized. Source logic overridden by local offset.json (Region: " << region << ")" << std::endl;
             } else {
@@ -1513,10 +1525,16 @@ void WINAPI hk_SetActive(void* pThis, bool active) {
     if (cfg.hide_grass && !CheckResistInBeyd() && active && getName) {
         Il2CppString* name = getName(pThis);
         if (name) {
-            if (wcsstr(name->chars, L"_Grass_")) {
-                for (std::wstring prefix : GrassPrefix) {
-                    if (wcsstr(name->chars, prefix.c_str())) {
-                        return;
+            if (cfg.hide_grass_indiscriminate) {
+                if (wcsstr(name->chars, L"Grass") && !wcsstr(name->chars, L"Eff") && !wcsstr(name->chars, L"Monster")) {
+                    return;
+                }
+            } else {
+                if (wcsstr(name->chars, L"_Grass_")) {
+                    for (std::wstring prefix : GrassPrefix) {
+                        if (wcsstr(name->chars, prefix.c_str())) {
+                            return;
+                        }
                     }
                 }
             }
