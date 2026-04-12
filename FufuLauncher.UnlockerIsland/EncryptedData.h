@@ -50,9 +50,9 @@ namespace EncryptedPatterns {
 	inline constexpr auto GetName = XorString::encrypt("40 53 48 81 EC ?? ?? ?? ?? 48 8B D9 48 85 C9 0F 84 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 85 C0 0F 84 ?? ?? ?? ?? 48 8B 10 48 8B C8 FF 52 ?? 48 85 C0 0F 85 ?? ?? ?? ?? 48 8B CB E8 ?? ?? ?? ??");
     // 22. SetupResinList
     inline constexpr auto SetupResinList = XorString::encrypt("E8 ?? ?? ?? ?? 84 DB 74 ?? 4C 89 F1 E8 ?? ?? ?? ?? 49 8B 86 ?? ?? ?? ?? 48 85 C0 75 ?? E9 ?? ?? ?? ??");
-    // 23. ClockPageOkButton HDGNBJFKNEO
+    // 23. ClockPageOkButton MNAABKDOGOB
     inline constexpr auto ClockPageOk = XorString::encrypt("56 57 55 53 48 83 EC ?? 48 89 CE 80 3D ?? ?? ?? ?? 00 0F 85 ?? ?? ?? ?? 80 BE ?? ?? ?? ?? 00 74 ??");
-    // 24. ClockPageCloseButton DGHEBBPGLIK
+    // 24. ClockPageCloseButton FGIHHMNOLAP
     inline constexpr auto ClockPageClose = XorString::encrypt("56 57 53 48 83 EC ?? 48 89 CE 80 3D ?? ?? ?? ?? 00 0F 85 ?? ?? ?? ?? 48 8B 8E ?? ?? ?? ?? 48 85 C9 0F 84 ?? ?? ?? ?? 83 79 ?? 00 7E ?? 48 8B 15 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 85 C0 0F 84 ?? ?? ?? ?? 48 89 C7 48 8B 40 ?? 85 C0 7E ?? 89 C0 31 DB 66 66 66 66 66 66 2E 0F 1F 84 00 00 00 00 00 89 C0 48 39 C3 0F 83 ?? ?? ?? ?? 48 8B 4C DF ?? 48 85 C9 0F 84 ?? ?? ?? ?? 48 8B 01 0F B7 90");
     // 25. GetActive (IsActive)
     inline constexpr auto GetActive = XorString::encrypt("E8 ?? ?? ?? ?? 84 C0 74 ?? 48 89 F1 E8 ?? ?? ?? ?? 48 8B 4E ?? 48 85 C9 0F 84 ?? ?? ?? ?? 80 79 ?? ?? 0F 94 C1 08 C1");
@@ -69,20 +69,20 @@ namespace EncryptedPatterns {
         // MoleMole.BaseActor.AvatarPaimonAppear
         inline constexpr auto AvatarPaimonAppearOffset = XorString::encrypt("11469590");
         // UnityEngine.Camera.get_main
-        inline constexpr auto GetMainCameraOffset = XorString::encrypt("0");
+        inline constexpr auto GetMainCameraOffset = XorString::encrypt("16C99810");
         // UnityEngine.Component.get_transform
-        inline constexpr auto GetTransformOffset = XorString::encrypt("0");
+        inline constexpr auto GetTransformOffset = XorString::encrypt("16CAA180");
         // UnityEngine.Transform.INTERNAL_set_position
-        inline constexpr auto SetPosOffset = XorString::encrypt("0");
+        inline constexpr auto SetPosOffset = XorString::encrypt("16CA3830");
         // UnityEngine.Camera.get_cameraToWorldMatrix
-        inline constexpr auto CameraGetC2WOffset = XorString::encrypt("0");
-        // GameObject.GetComponent(String type)
+        inline constexpr auto CameraGetC2WOffset = XorString::encrypt("16C98CF0");
+        // UnityEngine.Component.GetComponent(System.String type)
         inline constexpr auto GetComponent = XorString::encrypt("16C88AB0");
-        // Text.get_text
+        // UnityEngine.UI.Text.get_text
         inline constexpr auto GetText = XorString::encrypt("16D88760");
-        // public Void HDGNBJFKNEO
+
         inline constexpr auto ClockPageOkOffset = XorString::encrypt("118DD5E0");
-        // public Void DGHEBBPGLIK
+
         inline constexpr auto ClockPageCloseOffset = XorString::encrypt("6E76350");
     }
     
@@ -107,10 +107,10 @@ namespace EncryptedPatterns {
         inline constexpr auto GetComponent = XorString::encrypt("16C27F60");
         // UnityEngine.UI.Text.get_text
         inline constexpr auto GetText = XorString::encrypt("16D27A80");
-        // private System.Void HDGNBJFKNEO() { } // RVA: 0xe6153f0 Token: 0x601b5b0 Slot: -1
-        inline constexpr auto ClockPageOkOffset = XorString::encrypt("0");
-        // protected System.Void DGHEBBPGLIK() { } // RVA: 0xdf310b0 Token: 0x60574dc Slot: -1
-        inline constexpr auto ClockPageCloseOffset = XorString::encrypt("0");
+
+        inline constexpr auto ClockPageOkOffset = XorString::encrypt("118D08E0");
+
+        inline constexpr auto ClockPageCloseOffset = XorString::encrypt("6E74C70");
     }
 }
 

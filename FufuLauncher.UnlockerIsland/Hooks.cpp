@@ -24,9 +24,25 @@
 #include <wincodec.h>
 #include <dxgi1_2.h>
 #include <map>
+#include <regex>
+#include <fstream>
+#include <sstream>
+#include <filesystem>
 #include "GamepadHotSwitch.h"
 #include "HookWndProc.h"
 #include "il2cpp/Il2CppList.h"
+
+#include <list>
+std::list<std::wstring> GrassPrefix
+{
+    L"Area_Ndkl_",
+    L"Area_Nt_",
+    L"Area_Fd_",
+    L"Area_Xm_",
+    L"Area_Ly_",
+    L"Stages_M",
+    L"BigWorld_",
+};
 
 #pragma comment(lib, "windowscodecs.lib")
 #pragma comment(lib, "d3d11.lib")
@@ -235,6 +251,49 @@ namespace Offsets {
     std::string ClockPageOkOffset;
     std::string ClockPageCloseOffset;
 
+    std::string ParseOffsetFromJson(const std::string& jsonStr, const std::string& region, const std::string& key, const std::string& fallback) {
+        size_t regionStart = jsonStr.find("\"" + region + "\"");
+        if (regionStart != std::string::npos) {
+            size_t blockStart = jsonStr.find("{", regionStart);
+            size_t blockEnd = jsonStr.find("}", blockStart);
+            if (blockStart != std::string::npos && blockEnd != std::string::npos) {
+                std::string block = jsonStr.substr(blockStart, blockEnd - blockStart);
+                std::regex keyRegex("\"" + key + "\"\\s*:\\s*\"([^\"]+)\"");
+                std::smatch match;
+                if (std::regex_search(block, match, keyRegex) && match.size() > 1) {
+                    return match.str(1);
+                }
+            }
+        }
+        return fallback;
+    }
+    
+    std::string GetBestOffsetJsonPath() {
+        namespace fs = std::filesystem;
+        std::string currentDir = GetOwnDllDir();
+        
+        fs::path pathLocal = fs::path(currentDir) / "offset.json";
+        fs::path pathParent = fs::path(currentDir) / ".." / "offset.json";
+
+        std::error_code ecLocal, ecParent;
+        bool existsLocal = fs::exists(pathLocal, ecLocal) && !ecLocal;
+        bool existsParent = fs::exists(pathParent, ecParent) && !ecParent;
+
+        if (existsLocal && existsParent) {
+            auto timeLocal = fs::last_write_time(pathLocal, ecLocal);
+            auto timeParent = fs::last_write_time(pathParent, ecParent);
+            
+            if (!ecLocal && !ecParent) {
+                return (timeLocal > timeParent) ? pathLocal.string() : pathParent.string();
+            }
+        }
+        
+        if (existsLocal) return pathLocal.string();
+        if (existsParent) return pathParent.string();
+        
+        return "";
+    }
+
     void InitOffsets(bool isOS) {
         if (isOS) {
             GetActiveOffset = XorString::decrypt(EncryptedPatterns::OS::GetActiveOffset);
@@ -249,7 +308,7 @@ namespace Offsets {
             GetText = XorString::decrypt(EncryptedPatterns::OS::GetText);
             ClockPageOkOffset = XorString::decrypt(EncryptedPatterns::OS::ClockPageOkOffset);
             ClockPageCloseOffset = XorString::decrypt(EncryptedPatterns::OS::ClockPageCloseOffset);
-            std::cout << "[INFO] Initialized Global (OS) Offsets." << std::endl;
+            std::cout << "[INFO] Pre-initialized Global (OS) Offsets from hardcode" << std::endl;
         } else {
             GetActiveOffset = XorString::decrypt(EncryptedPatterns::CN::GetActiveOffset);
             ActorManagerCtorOffset = XorString::decrypt(EncryptedPatterns::CN::ActorManagerCtorOffset);
@@ -263,7 +322,40 @@ namespace Offsets {
             GetText = XorString::decrypt(EncryptedPatterns::CN::GetText);
             ClockPageOkOffset = XorString::decrypt(EncryptedPatterns::CN::ClockPageOkOffset);
             ClockPageCloseOffset = XorString::decrypt(EncryptedPatterns::CN::ClockPageCloseOffset);
-            std::cout << "[INFO] Initialized China (CN) Offsets." << std::endl;
+            std::cout << "[INFO] Pre-initialized China (CN) Offsets from hardcode" << std::endl;
+        }
+        
+        std::string targetJsonPath = GetBestOffsetJsonPath();
+        
+        if (!targetJsonPath.empty()) {
+            std::ifstream jsonFile(targetJsonPath);
+            if (jsonFile.is_open()) {
+                std::stringstream buffer;
+                buffer << jsonFile.rdbuf();
+                std::string jsonContent = buffer.str();
+                std::string region = isOS ? "OS" : "CN";
+
+                std::cout << "[INFO] Found offset.json at " << targetJsonPath << ". Attempting to merge..." << std::endl;
+
+                GetActiveOffset = ParseOffsetFromJson(jsonContent, region, "GetActiveOffset", GetActiveOffset);
+                ActorManagerCtorOffset = ParseOffsetFromJson(jsonContent, region, "ActorManagerCtorOffset", ActorManagerCtorOffset);
+                GetGlobalActorOffset = ParseOffsetFromJson(jsonContent, region, "GetGlobalActorOffset", GetGlobalActorOffset);
+                AvatarPaimonAppearOffset = ParseOffsetFromJson(jsonContent, region, "AvatarPaimonAppearOffset", AvatarPaimonAppearOffset);
+                GetMainCameraOffset = ParseOffsetFromJson(jsonContent, region, "GetMainCameraOffset", GetMainCameraOffset);
+                GetTransformOffset = ParseOffsetFromJson(jsonContent, region, "GetTransformOffset", GetTransformOffset);
+                SetPosOffset = ParseOffsetFromJson(jsonContent, region, "SetPosOffset", SetPosOffset);
+                CameraGetC2WOffset = ParseOffsetFromJson(jsonContent, region, "CameraGetC2WOffset", CameraGetC2WOffset);
+                GetComponent = ParseOffsetFromJson(jsonContent, region, "GetComponent", GetComponent);
+                GetText = ParseOffsetFromJson(jsonContent, region, "GetText", GetText);
+                ClockPageOkOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageOkOffset", ClockPageOkOffset);
+                ClockPageCloseOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageCloseOffset", ClockPageCloseOffset);
+
+                std::cout << "[INFO] Offsets initialized. Source logic overridden by local offset.json (Region: " << region << ")" << std::endl;
+            } else {
+                std::cout << "[INFO] Failed to open offset.json at " << targetJsonPath << ". Proceeding with default hardcoded offsets" << std::endl;
+            }
+        } else {
+            std::cout << "[INFO] No valid offset.json found in Plugins or FuFuPlugin directories. Proceeding with default hardcoded offsets" << std::endl;
         }
     }
 }
@@ -1259,15 +1351,21 @@ void UpdateTitleWatermark() {
 }
 
 void DoCraftLogic() {
-    auto findStr = (tFindString)p_FindString.load();
-    auto partner = (tCraftPartner)p_CraftPartner.load();
-    if (IsValid(findStr) && IsValid(partner)) {
-        SafeInvoke([&]
-        {
-            std::string sPage = XorString::decrypt(EncryptedStrings::SynthesisPage);
-            Il2CppString* str = findStr(sPage.c_str());
-            if (str) partner(str, nullptr, nullptr, nullptr, nullptr);
-        });
+    __try {
+        auto findStr = (tFindString)p_FindString.load();
+        auto partner = (tCraftPartner)p_CraftPartner.load();
+        
+        if (!findStr || IsBadReadPtr((void*)findStr, sizeof(void*))) return;
+        if (!partner || IsBadReadPtr((void*)partner, sizeof(void*))) return;
+
+        std::string sPage = XorString::decrypt(EncryptedStrings::SynthesisPage);
+        Il2CppString* str = findStr(sPage.c_str());
+        
+        if (str && !IsBadReadPtr(str, sizeof(Il2CppString))) {
+            partner(str, nullptr, nullptr, nullptr, nullptr);
+        }
+    } 
+    __except (EXCEPTION_EXECUTE_HANDLER) {
     }
 }
 
@@ -1384,46 +1482,70 @@ bool WINAPI hk_EventCamera(void* a, void* b) {
 }
 
 void WINAPI hk_CraftEntry(void* _this) {
-    if (Config::Get().enable_redirect_craft_override) {
-        DoCraftLogic();
-        return;
+    __try {
+        if (Config::Get().enable_redirect_craft_override) {
+            DoCraftLogic();
+            return;
+        }
+        
+        auto orig = (tCraftEntry)o_CraftEntry.load();
+        
+        if (orig && !IsBadReadPtr((void*)orig, sizeof(void*))) {
+            if (_this && !IsBadReadPtr(_this, sizeof(void*))) {
+                orig(_this);
+            }
+        }
+    } 
+    __except (EXCEPTION_EXECUTE_HANDLER) {
     }
-    auto orig = (tCraftEntry)o_CraftEntry.load();
-    if (orig) orig(_this);
 }
 
 void WINAPI hk_OpenTeam() {
-    if (Config::Get().enable_remove_team_anim) {
-        auto check = (tCheckCanEnter)p_CheckCanEnter.load();
-        auto openPage = (tOpenTeamPage)p_OpenTeamPage.load();
-        if (IsValid(check) && IsValid(openPage)) {
-            bool canEnter = false;
-            SafeInvoke([&] { canEnter = check(); });
-            if (canEnter) {
-                SafeInvoke([&] { openPage(false); });
-                return;
-            }
+    __try {
+        if (Config::Get().enable_remove_team_anim) {
+            auto check = (tCheckCanEnter)p_CheckCanEnter.load();
+            auto openPage = (tOpenTeamPage)p_OpenTeamPage.load();
+            
+            if (check && !IsBadReadPtr((void*)check, sizeof(void*)) && 
+                openPage && !IsBadReadPtr((void*)openPage, sizeof(void*))) {
+                
+                bool canEnter = check();
+                if (canEnter) {
+                    openPage(false);
+                    return;
+                }
+                }
         }
+        
+        auto orig = (tOpenTeam)o_OpenTeam.load();
+        
+        if (orig && !IsBadReadPtr((void*)orig, sizeof(void*))) {
+            orig();
+        }
+    } 
+    __except (EXCEPTION_EXECUTE_HANDLER) {
     }
-    auto orig = (tOpenTeam)o_OpenTeam.load();
-    if (orig) orig();
 }
 
 void WINAPI hk_SetActive(void* pThis, bool active) {
-	tSetActive orig = (tSetActive)o_SetActive.load();
-	auto cfg = Config::Get();
-	auto getName = (tGetName)p_GetName.load();
+    tSetActive orig = (tSetActive)o_SetActive.load();
+    auto cfg = Config::Get();
+    auto getName = (tGetName)p_GetName.load();
 
     if (cfg.hide_grass && !CheckResistInBeyd() && active && getName) {
         Il2CppString* name = getName(pThis);
         if (name) {
-            if (wcsstr(name->chars, L"Grass") && !wcsstr(name->chars, L"Eff") && !wcsstr(name->chars, L"Monster")) {
-                return;
+            if (wcsstr(name->chars, L"_Grass_")) {
+                for (std::wstring prefix : GrassPrefix) {
+                    if (wcsstr(name->chars, prefix.c_str())) {
+                        return;
+                    }
+                }
             }
         }
     }
 
-	orig(pThis, active);
+    orig(pThis, active);
 }
 
 auto hk_DisplayFog(__int64 a1, __int64 a2) -> __int64

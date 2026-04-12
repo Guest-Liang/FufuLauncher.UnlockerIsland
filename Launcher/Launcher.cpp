@@ -1,5 +1,6 @@
 ﻿#include <windows.h>
 #include <shlwapi.h>
+#include <winhttp.h>
 #include <string>
 #include <fstream>
 #include <chrono>
@@ -9,6 +10,7 @@
 #include "Launcher.h"
 
 #pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "winhttp.lib")
 
 const wchar_t* PLUGINS_SUBDIR_NAME = L"Plugins"; 
 
@@ -61,6 +63,62 @@ void WriteLog(const std::string& message) {
 void HideConsole() {
     HWND hwnd = GetConsoleWindow();
     if (hwnd != NULL) ShowWindow(hwnd, SW_HIDE);
+}
+
+void DownloadOffsetJson(const std::wstring& pluginsDir) {
+    WriteLog("尝试连接服务器获取 offset.json...");
+    HINTERNET hSession = WinHttpOpen(L"LauncherHTTP/1.0", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+    if (!hSession) {
+        WriteLog("系统组件初始化失败，跳过下载步骤。");
+        return;
+    }
+
+    WinHttpSetTimeouts(hSession, 5000, 5000, 5000, 5000);
+
+    HINTERNET hConnect = WinHttpConnect(hSession, L"154.44.25.230", INTERNET_DEFAULT_HTTP_PORT, 0);
+    if (hConnect) {
+        HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"GET", L"/offset.json", NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, 0);
+        if (hRequest) {
+            if (WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0)) {
+                if (WinHttpReceiveResponse(hRequest, NULL)) {
+                    DWORD dwStatusCode = 0;
+                    DWORD dwSize = sizeof(dwStatusCode);
+                    WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX, &dwStatusCode, &dwSize, WINHTTP_NO_HEADER_INDEX);
+                    
+                    if (dwStatusCode == 200) {
+                        std::wstring savePath = pluginsDir + L"\\offset.json";
+                        std::ofstream outFile(savePath, std::ios::binary);
+                        if (outFile.is_open()) {
+                            DWORD size = 0;
+                            DWORD downloaded = 0;
+                            do {
+                                size = 0;
+                                if (!WinHttpQueryDataAvailable(hRequest, &size)) break;
+                                if (size == 0) break;
+                                std::vector<char> buffer(size);
+                                if (WinHttpReadData(hRequest, (LPVOID)buffer.data(), size, &downloaded)) {
+                                    outFile.write(buffer.data(), downloaded);
+                                }
+                            } while (size > 0);
+                            outFile.close();
+                            WriteLog("offset.json下载成功并保存至Plugins目录");
+                        } else {
+                            WriteLog("无法写入offset.json，跳过保存");
+                        }
+                    } else {
+                        WriteLog("服务器响应异常状态码，跳过下载");
+                    }
+                } else {
+                    WriteLog("服务器无响应或连接超时，跳过下载");
+                }
+            } else {
+                WriteLog("连接服务器失败，跳过下载");
+            }
+            WinHttpCloseHandle(hRequest);
+        }
+        WinHttpCloseHandle(hConnect);
+    }
+    WinHttpCloseHandle(hSession);
 }
 
 bool InjectDll(HANDLE hProcess, const std::wstring& dllPath) {
@@ -145,9 +203,11 @@ void InjectPlugins(HANDLE hProcess) {
     std::wstring pluginsDir = dllDir + L"\\" + PLUGINS_SUBDIR_NAME;
 
     if (GetFileAttributesW(pluginsDir.c_str()) == INVALID_FILE_ATTRIBUTES) {
-        WriteLog("未找到 Plugins 目录，跳过插件加载。查找路径: " + WStringToString(pluginsDir));
-        return;
+        CreateDirectoryW(pluginsDir.c_str(), NULL);
+        WriteLog("创建 Plugins 目录: " + WStringToString(pluginsDir));
     }
+
+    DownloadOffsetJson(pluginsDir);
 
     WriteLog("正在递归扫描插件目录: " + WStringToString(pluginsDir));
     

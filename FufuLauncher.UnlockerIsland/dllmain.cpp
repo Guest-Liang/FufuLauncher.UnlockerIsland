@@ -171,7 +171,7 @@ enum class AuthResult {
 
 AuthResult CheckRemoteStatus() {
     AuthResult result = AuthResult::NET_ERROR;
-    HINTERNET hInternet = InternetOpenA("FufuLauncher Unlock/1.0.1", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+    HINTERNET hInternet = InternetOpenA("FufuLauncher Unlock/1.1.0.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
     
     if (hInternet) {
         DWORD timeout = 5000;
@@ -312,4 +312,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call) {
 * | |_    | | | | | |_  | | | | | |      / _` | | | | | | '_ \   / __| | '_ \   / _ \ | '__|     | | | | | '_ \  | |  / _ \   / __| | |/ /  / _ \ | '__|  | |  / __| | |  / _` | | '_ \   / _` |
 * |  _|   | |_| | |  _| | |_| | | |___  | (_| | | |_| | | | | | | (__  | | | | |  __/ | |     _  | |_| | | | | | | | | (_) | | (__  |   <  |  __/ | |     | |  \__ \ | | | (_| | | | | | | (_| |
 * |_|      \__,_| |_|    \__,_| |_____|  \__,_|  \__,_| |_| |_|  \___| |_| |_|  \___| |_|    (_)  \___/  |_| |_| |_|  \___/   \___| |_|\_\  \___| |_|    |___| |___/ |_|  \__,_| |_| |_|  \__,_|
-* */
+*
+* 感谢项目https://github.com/SnapHutaoRemasteringProject/Snap.Hutao.Remastered.UnlockerIsland和其开发者对本项目的帮助
+ */
