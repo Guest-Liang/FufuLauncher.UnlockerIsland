@@ -8,4 +8,6 @@ namespace Hooks {
     void RequestOpenCraft();
     void TriggerReloadPopup();
     void UpdateVisuals();
+
+    uint32_t GetCurrentUID();
 }

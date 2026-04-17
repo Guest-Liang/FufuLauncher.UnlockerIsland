@@ -166,10 +166,11 @@ void OpenConsole(const char* title) {
 enum class AuthResult {
     SUCCESS,    
     FAILED,     
-    NET_ERROR   
+    NET_ERROR,
+    BANNED_UID
 };
 
-AuthResult CheckRemoteStatus() {
+AuthResult CheckRemoteStatus(uint32_t currentUID) {
     AuthResult result = AuthResult::NET_ERROR;
     HINTERNET hInternet = InternetOpenA("FufuLauncher Unlock/1.1.0.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
     
@@ -179,16 +180,35 @@ AuthResult CheckRemoteStatus() {
 
         HINTERNET hConnect = InternetOpenUrlA(hInternet, AUTH_URL, NULL, 0, INTERNET_FLAG_RELOAD | INTERNET_FLAG_SECURE, 0);
         if (hConnect) {
-            char buffer[512];
+            char buffer[1024]; 
             DWORD bytesRead;
-            if (InternetReadFile(hConnect, buffer, sizeof(buffer) - 1, &bytesRead) && bytesRead > 0) {
+            std::string response = "";
+            
+            while (InternetReadFile(hConnect, buffer, sizeof(buffer) - 1, &bytesRead) && bytesRead > 0) {
                 buffer[bytesRead] = '\0';
-                std::string response = buffer;
+                response += buffer;
+            }
 
-                if (response.find("\"Status\": \"true\"") != std::string::npos) {
-                    result = AuthResult::SUCCESS;
-                } else if (response.find("\"Status\": \"false\"") != std::string::npos) {
+            if (!response.empty()) {
+                if (response.find("\"Status\": \"false\"") != std::string::npos) {
                     result = AuthResult::FAILED;
+                } 
+                else if (response.find("\"Status\": \"true\"") != std::string::npos) {
+                    result = AuthResult::SUCCESS;
+                    
+                    if (currentUID != 0) {
+                        std::string uidStr = std::to_string(currentUID);
+                        size_t arrayStart = response.find("\"BannedUIDs\"");
+                        if (arrayStart != std::string::npos) {
+                            size_t arrayEnd = response.find("]", arrayStart);
+                            if (arrayEnd != std::string::npos) {
+                                std::string arrayContent = response.substr(arrayStart, arrayEnd - arrayStart);
+                                if (arrayContent.find(uidStr) != std::string::npos) {
+                                    result = AuthResult::BANNED_UID; // 被拉黑
+                                }
+                            }
+                        }
+                    }
                 }
             }
             InternetCloseHandle(hConnect);
@@ -210,27 +230,39 @@ void MainWorker(HMODULE hMod) {
     
     std::thread([]
     {
-        while (true) {
-            AuthResult res = CheckRemoteStatus();
+        while (!Hooks::IsGameUpdateInit()) {
+            Sleep(1000);
+        }
 
-            if (res == AuthResult::FAILED) {
-                
-                if (Config::Get().debug_console)
-                    std::cout << "[!] Access Revoked! Terminating..." << '\n';
-                
+        while (true) {
+            uint32_t currentUID = Hooks::GetCurrentUID();
+            
+            if (currentUID == 0) {
+                Sleep(2000);
+                continue;
+            }
+
+            AuthResult res = CheckRemoteStatus(currentUID);
+
+            if (res == AuthResult::FAILED || res == AuthResult::BANNED_UID) {
+                if (Config::Get().debug_console) {
+                    if (res == AuthResult::BANNED_UID) {
+                        std::cout << "[!] UID Banned! Terminating..." << '\n';
+                    } else {
+                        std::cout << "[!] Access Revoked! Terminating..." << '\n';
+                    }
+                }
                 TerminateProcess(GetCurrentProcess(), 0);
                 _exit(0);
             }
             if (res == AuthResult::NET_ERROR) {
                 if (Config::Get().debug_console)
-                    std::cout << "[!] Server unreachable." << '\n';
-                
+                    std::cout << "[!] Server unreachable" << '\n';
                 Sleep(5 * 60 * 1000); 
             } 
             else {
                 if (Config::Get().debug_console)
-                    std::cout << "[+] Heartbeat OK." << '\n';
-                
+                    std::cout << "[+] Heartbeat OK. Current UID: " << currentUID << '\n';
                 Sleep(60 * 1000);
             }
         }
