@@ -63,6 +63,15 @@ struct ModConfig {
     int free_cam_key = VK_F5;
     
     int free_cam_reset_key = VK_F7;
+    
+    int free_cam_forward = VK_UP;
+    int free_cam_backward = VK_DOWN;
+    int free_cam_left = VK_LEFT;
+    int free_cam_right = VK_RIGHT;
+    int free_cam_up = VK_SPACE;
+    int free_cam_down = VK_SUBTRACT;
+    int free_cam_speed_up = VK_SHIFT;
+    int free_cam_speed_down = VK_CONTROL;
 
     bool enable_free_cam_movement_fix = true;
 

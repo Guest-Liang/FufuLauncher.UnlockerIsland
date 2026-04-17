@@ -688,20 +688,19 @@ if (Config::Get().enable_free_cam_movement_fix) {
     }
     
     float currentPower = FC_BASE_SPEED;
-    if (GetAsyncKeyState(VK_SHIFT) & 0x8000)   currentPower *= FC_SHIFT_MULTIPLIER;
-    if (GetAsyncKeyState(VK_CONTROL) & 0x8000) currentPower *= FC_CTRL_MULTIPLIER;
+    if (GetAsyncKeyState(cfg.free_cam_speed_up) & 0x8000)   currentPower *= FC_SHIFT_MULTIPLIER;
+    if (GetAsyncKeyState(cfg.free_cam_speed_down) & 0x8000) currentPower *= FC_CTRL_MULTIPLIER;
     
     float inputForward = 0.0f;
     float inputRight = 0.0f;
     float inputUp = 0.0f;
 
-    if (GetAsyncKeyState(VK_UP) & 0x8000)      inputForward += 1.0f;
-    if (GetAsyncKeyState(VK_DOWN) & 0x8000)    inputForward -= 1.0f;
-    if (GetAsyncKeyState(VK_LEFT) & 0x8000)    inputRight -= 1.0f;
-    if (GetAsyncKeyState(VK_RIGHT) & 0x8000)   inputRight += 1.0f;
-    if (GetAsyncKeyState(VK_SPACE) & 0x8000)   inputUp += 1.0f;
-    if (GetAsyncKeyState(VK_ADD) & 0x8000)     inputUp += 1.0f;
-    if (GetAsyncKeyState(VK_SUBTRACT) & 0x8000) inputUp -= 1.0f;
+    if (GetAsyncKeyState(cfg.free_cam_forward) & 0x8000)   inputForward += 1.0f;
+    if (GetAsyncKeyState(cfg.free_cam_backward) & 0x8000)  inputForward -= 1.0f;
+    if (GetAsyncKeyState(cfg.free_cam_left) & 0x8000)      inputRight -= 1.0f;
+    if (GetAsyncKeyState(cfg.free_cam_right) & 0x8000)     inputRight += 1.0f;
+    if (GetAsyncKeyState(cfg.free_cam_up) & 0x8000)        inputUp += 1.0f;
+    if (GetAsyncKeyState(cfg.free_cam_down) & 0x8000)      inputUp -= 1.0f;
 
     float targetVelX = 0.0f, targetVelY = 0.0f, targetVelZ = 0.0f;
     

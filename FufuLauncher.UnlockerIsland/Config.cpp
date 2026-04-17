@@ -147,6 +147,15 @@ namespace Config {
         
         g_Config.free_cam_reset_key = ReadInt("FreeCamResetKey", VK_F7, file);
 
+        g_Config.free_cam_forward = ReadInt("FreeCamForward", VK_UP, file);
+        g_Config.free_cam_backward = ReadInt("FreeCamBackward", VK_DOWN, file);
+        g_Config.free_cam_left = ReadInt("FreeCamLeft", VK_LEFT, file);
+        g_Config.free_cam_right = ReadInt("FreeCamRight", VK_RIGHT, file);
+        g_Config.free_cam_up = ReadInt("FreeCamUp", VK_SPACE, file);
+        g_Config.free_cam_down = ReadInt("FreeCamDown", VK_SUBTRACT, file);
+        g_Config.free_cam_speed_up = ReadInt("FreeCamSpeedUp", VK_SHIFT, file);
+        g_Config.free_cam_speed_down = ReadInt("FreeCamSpeedDown", VK_CONTROL, file);
+
         g_Config.enable_free_cam_movement_fix = ReadInt("EnableFreeCamMovementFix", 1, file);
         
         g_Config.enable_gamepad_hot_switch = ReadInt("EnableGamepadHotSwitch", 1, file);
