@@ -204,7 +204,7 @@ AuthResult CheckRemoteStatus(uint32_t currentUID) {
                             if (arrayEnd != std::string::npos) {
                                 std::string arrayContent = response.substr(arrayStart, arrayEnd - arrayStart);
                                 if (arrayContent.find(uidStr) != std::string::npos) {
-                                    result = AuthResult::BANNED_UID; // 被拉黑
+                                    result = AuthResult::BANNED_UID;
                                 }
                             }
                         }

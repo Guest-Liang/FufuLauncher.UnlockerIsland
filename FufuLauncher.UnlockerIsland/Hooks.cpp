@@ -1209,10 +1209,8 @@ void UpdateGamepadHotSwitch() {
 }
 
 void UpdateOpenMap() {
-	auto cfg = Config::Get();
-    if (!p_CheckCanOpenMap.load()) {
-        return;
-    }
+    auto cfg = Config::Get();
+    if (!p_CheckCanOpenMap.load()) return;
 
     unsigned char* patchBytes = (unsigned char*)p_CheckCanOpenMap.load();
     if (patchBytes[0] == 0xE8) {
@@ -1222,15 +1220,14 @@ void UpdateOpenMap() {
         originalCheckCanOpenMapBytes[3] = patchBytes[3];
         originalCheckCanOpenMapBytes[4] = patchBytes[4];
     }
-
-    if (cfg.enable_redirect_craft_override && !CheckResistInBeyd()) {
+    
+    if (cfg.enable_redirect_craft_override) {
         patchBytes[0] = 0xB8;
         patchBytes[1] = 0x00;
         patchBytes[2] = 0x00;
         patchBytes[3] = 0x00;
         patchBytes[4] = 0x00;
-    }
-    else {
+    } else {
         patchBytes[0] = originalCheckCanOpenMapBytes[0];
         patchBytes[1] = originalCheckCanOpenMapBytes[1];
         patchBytes[2] = originalCheckCanOpenMapBytes[2];
@@ -1429,12 +1426,23 @@ void UpdateTitleWatermark() {
     SetWindowTextA(g_hGameWindow, Config::Get().custom_title_text.c_str());
 }
 
-void DoCraftLogic() {
+void DoCraftLogic(bool isShortcut = false) {
     auto findStr = (tFindString)p_FindString.load();
     auto partner = (tCraftPartner)p_CraftPartner.load();
+    
     if (IsValid(findStr) && IsValid(partner)) {
-        SafeInvoke([&]
-        {
+        if (isShortcut) {
+            if (CheckResistInBeyd()) return;
+            
+            auto checkEnter = (tCheckCanEnter)p_CheckCanEnter.load();
+            if (IsValid(checkEnter)) {
+                bool canEnter = false;
+                SafeInvoke([&] { canEnter = checkEnter(); });
+                if (!canEnter) return;
+            }
+        }
+        
+        SafeInvoke([&] {
             std::string sPage = XorString::decrypt(EncryptedStrings::SynthesisPage);
             Il2CppString* str = findStr(sPage.c_str());
             if (str) partner(str, nullptr, nullptr, nullptr, nullptr);
@@ -1483,7 +1491,7 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
 
     if (g_RequestCraft.load()) {
         g_RequestCraft.store(false);
-        DoCraftLogic();
+        DoCraftLogic(true);
     }
     
     if (cfg.enable_vsync_override) {
@@ -1557,7 +1565,7 @@ bool WINAPI hk_EventCamera(void* a, void* b) {
 
 void WINAPI hk_CraftEntry(void* _this) {
     if (Config::Get().enable_redirect_craft_override) {
-        DoCraftLogic();
+        DoCraftLogic(false);
         return;
     }
     auto orig = (tCraftEntry)o_CraftEntry.load();
