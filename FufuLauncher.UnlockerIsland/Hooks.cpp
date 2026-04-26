@@ -254,7 +254,6 @@ namespace Offsets {
     std::string ResinListOffset;
     std::string TouchInputOffset;
     std::string KeyboardMouseInputOffset;
-    std::string JoypadInputOffset;
 
     std::string ParseOffsetFromJson(const std::string& jsonStr, const std::string& region, const std::string& key, const std::string& fallback) {
         size_t regionStart = jsonStr.find("\"" + region + "\"");
@@ -316,7 +315,6 @@ namespace Offsets {
             ResinListOffset = XorString::decrypt(EncryptedPatterns::OS::ResinListOffset);
             TouchInputOffset = XorString::decrypt(EncryptedPatterns::OS::TouchInputOffset);
             KeyboardMouseInputOffset = XorString::decrypt(EncryptedPatterns::OS::KeyboardMouseInputOffset);
-            JoypadInputOffset = XorString::decrypt(EncryptedPatterns::OS::JoypadInputOffset);
             std::cout << "[INFO] Pre-initialized Global (OS) Offsets from hardcode" << std::endl;
         } else {
             GetActiveOffset = XorString::decrypt(EncryptedPatterns::CN::GetActiveOffset);
@@ -334,7 +332,6 @@ namespace Offsets {
             ResinListOffset = XorString::decrypt(EncryptedPatterns::CN::ResinListOffset);
             TouchInputOffset = XorString::decrypt(EncryptedPatterns::CN::TouchInputOffset);
             KeyboardMouseInputOffset = XorString::decrypt(EncryptedPatterns::CN::KeyboardMouseInputOffset);
-            JoypadInputOffset = XorString::decrypt(EncryptedPatterns::CN::JoypadInputOffset);
             std::cout << "[INFO] Pre-initialized China (CN) Offsets from hardcode" << std::endl;
         }
         
@@ -365,7 +362,6 @@ namespace Offsets {
                 ResinListOffset = ParseOffsetFromJson(jsonContent, region, "ResinListOffset", ResinListOffset);
                 TouchInputOffset = ParseOffsetFromJson(jsonContent, region, "TouchInput", TouchInputOffset);
                 KeyboardMouseInputOffset = ParseOffsetFromJson(jsonContent, region, "KeyboardMouseInput", KeyboardMouseInputOffset);
-                JoypadInputOffset = ParseOffsetFromJson(jsonContent, region, "JoypadInput", JoypadInputOffset);
 
                 std::cout << "[INFO] Offsets initialized. Source logic overridden by local offset.json (Region: " << region << ")" << std::endl;
             } else {

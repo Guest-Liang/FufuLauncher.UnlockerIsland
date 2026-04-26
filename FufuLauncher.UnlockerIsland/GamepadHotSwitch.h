@@ -1,14 +1,8 @@
 #pragma once
 
 #include <windows.h>
-#include <Xinput.h>
 #include <atomic>
 #include <thread>
-#include <vector>
-#include <dinput.h>
-
-struct IDirectInput8W;
-struct IDirectInputDevice8W;
 
 class GamepadHotSwitch
 {
@@ -20,7 +14,6 @@ public:
     void SetEnabled(bool enabled);
     bool IsEnabled() const;
     void ProcessWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam);
-    BOOL InitializeDirectInputDevice(LPCDIDEVICEINSTANCEW lpddi);
 
 private:
     GamepadHotSwitch();
@@ -29,43 +22,26 @@ private:
     GamepadHotSwitch(const GamepadHotSwitch&) = delete;
     GamepadHotSwitch& operator=(const GamepadHotSwitch&) = delete;
     
+    // 在 GamepadHotSwitch.h 的 private 区域修改：
     void MainThread();
-    
-    bool IsControllerActive(const XINPUT_STATE& state) const;
-    bool IsDirectInputControllerActive();
     bool IsMouseActive() const;
-    void SendSwitchMessage(bool toGamepad);
-    
-    bool InitializeDirectInput();
-    void ShutdownDirectInput();
-    bool IsDirectInputDeviceActive(IDirectInputDevice8W* pDevice);
+    void SendSwitchMessage(bool toGamepad, bool force = false); // 添加 force 参数
 
 private:
     std::atomic<bool> m_isExiting{false};
     std::atomic<bool> m_enabled{false};
+
+    std::atomic<int> m_wKeySwitchCount{0};
+    static constexpr int MAX_W_KEY_SWITCHES = 5;
     
     HANDLE m_hThread{nullptr};
-    
-    HMODULE m_hXInput{nullptr};
-    DWORD (WINAPI* m_XInputGetState)(DWORD, XINPUT_STATE*){nullptr};
-    
-    HMODULE m_hDirectInput{nullptr};
-    IDirectInput8W* m_pDirectInput{nullptr};
-    std::vector<IDirectInputDevice8W*> m_directInputDevices;
     
     POINT m_lastMousePos{0, 0};
     ULONGLONG m_lastMouseTime = 0;
     std::atomic<ULONGLONG> m_lastMouseActivityTime{0};
-    
-    std::atomic<ULONGLONG> m_lastGamepadActivityTime{0};
 
     bool isGamepadMode = false;
     
     static constexpr DWORD SWITCH_DELAY_MS = 100;
     static constexpr DWORD MOUSE_INACTIVITY_THRESHOLD_MS = 2000;
-    static constexpr DWORD GAMEPAD_INACTIVITY_THRESHOLD_MS = 3000;
-    
-    static constexpr BYTE TRIGGER_THRESHOLD = 30;
-    static constexpr SHORT THUMB_L_THRESHOLD = 7849;
-    static constexpr SHORT THUMB_R_THRESHOLD = 8689;
 };
