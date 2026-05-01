@@ -11,7 +11,7 @@ namespace EncryptedPatterns {
     // 4. SwitchInputDevice
     inline constexpr auto SwitchInputDeviceToTouchScreen = XorString::encrypt("56 57 48 83 EC ? 48 89 CE 80 3D ? ? ? ? 00 48 8B 05 ? ? ? ? 0F 85 ? ? ? ? 48 8B 88 ? ? ? ? 48 85 C9 0F 84 ? ? ? ? 48 8B 15 ? ? ? ? E8 ? ? ? ? 48 89 C7 48 8B 05 ? ? ? ? 48 8B 88 ? ? ? ? 48 85 C9 0F 84 ? ? ? ? 31 D2");
     
-    inline constexpr auto SwitchInputDeviceToKeyboard = XorString::encrypt("56 57 48 83 EC 28 48 89 CE 80 3D ?? ?? ?? ?? 00 48 8B 05 ?? ?? ?? ?? 0F 85 ?? ?? ?? ?? 48 8B 88 ?? ?? ?? ?? 48 85 C9 0F 84 ?? ?? ?? ?? 48 8B 15 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 89 C7 48 8B 05 ?? ?? ?? ?? 48 8B 88 ?? ?? ?? ?? 48 85 C9 0F 84 ?? ?? ?? ?? BA 01 00 00 00 E8 ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 8B 88 ?? ?? ?? ?? 48 85 C9 0F 84 ?? ?? ?? ?? BA 02 00 00 00 E8");
+    //inline constexpr auto SwitchInputDeviceToKeyboard = XorString::encrypt("56 57 48 83 EC 28 48 89 CE 80 3D ?? ?? ?? ?? 00 48 8B 05 ?? ?? ?? ?? 0F 85 ?? ?? ?? ?? 48 8B 88 ?? ?? ?? ?? 48 85 C9 0F 84 ?? ?? ?? ?? 48 8B 15 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 89 C7 48 8B 05 ?? ?? ?? ?? 48 8B 88 ?? ?? ?? ?? 48 85 C9 0F 84 ?? ?? ?? ?? BA 01 00 00 00 E8 ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 8B 88 ?? ?? ?? ?? 48 85 C9 0F 84 ?? ?? ?? ?? BA 02 00 00 00 E8");
     // 5. QuestBanner
     inline constexpr auto QuestBanner = XorString::encrypt("41 57 41 56 56 57 55 53 48 81 EC ? ? ? ? 0F 29 BC 24 ? ? ? ? 0F 29 B4 24 ? ? ? ? 48 89 CE 80 3D ? ? ? ? 00 0F 85 ? ? ? ? 48 8B 96");
     // 6. FindGameObject
@@ -58,6 +58,19 @@ namespace EncryptedPatterns {
     inline constexpr auto GetActive = XorString::encrypt("E8 ?? ?? ?? ?? 84 C0 74 ?? 48 89 F1 E8 ?? ?? ?? ?? 48 8B 4E ?? 48 85 C9 0F 84 ?? ?? ?? ?? 80 79 ?? ?? 0F 94 C1 08 C1");
     // 26. ActorManagerCtor (Error)
     inline constexpr auto ActorManagerCtor = XorString::encrypt("E8 ?? ?? ?? ?? 48 85 F6 0F 84 ?? ?? ?? ?? BF ?? ?? ?? ?? 48 89 F1 48 8B 55 ?? 49 89 D8 E8 ?? ?? ?? ?? EB ??");
+    // 27. System.Runtime.InteropServices.Marshal.PtrToStringAnsi
+    inline constexpr auto StringNew = XorString::encrypt("56 48 83 EC 20 48 85 C9 74 ? 48 89 CE E8 ? ? ? ? 48 89 F1 89 C2");
+    // 28. MiHoYo.SDK.ConfirmWithJoypad.Show
+    inline constexpr auto ShowDialog = XorString::encrypt("41 57 41 56 56 57 55 53 48 83 EC 28 4D 89 CF 4C 89 C7 48 89 D5 48 89 CB");
+
+    inline constexpr auto SetUID = XorString::encrypt("56 57 48 83 EC 28 89 D7 48 89 CE 80 3D ?? ?? ?? ?? 00 0F 84 ?? ?? ?? ?? 80 3D ?? ?? ?? ?? 00 0F 85 ?? ?? ?? ?? 89 BE ?? ?? ?? ?? 48 8B 0D ?? ?? ?? ?? 80 B9 ?? ?? ?? ?? 00 0F 84");
+    
+    namespace Helper {
+        // 6.5 public static System.Boolean CFJPPOEEBIN(System.String AKEHPOMKHMD, System.String BKAOJMEAFMJ, System.Action LAMEAEGPHBA, KNILOOINOII MLHBMIJHAFC, MoleMole.BaseInterAction CELNFAOCKGI, System.Int32 KMKEOGHNFEF, MPCMIKINPHO MDPBBOOHNNK)
+        inline constexpr auto InnerDispatcher_1 = XorString::encrypt("41 57 41 56 41 55 41 54 56 57 55 53 48 81 EC E8 00 00 00 4C 89 CB 4C 89 C7 48 89 D5 48 89 CA");
+        inline constexpr auto InnerDispatcher_2 = XorString::encrypt("41 57 41 56 41 55 41 54 56 57 55 53 48 81 EC E8 00 00 00 4C 89 CB 4C 89 C7");
+        inline constexpr auto InnerDispatcher_3 = XorString::encrypt("41 57 41 56 41 55 41 54 56 57 55 53 48 81 EC ? 00 00 00 4C 89 CB 4C 89 C7 48 89 D5 48 89 CA");
+    }
     
     namespace CN {
         // UnityEngine.GameObject.get_active
@@ -89,9 +102,7 @@ namespace EncryptedPatterns {
 
         inline constexpr auto TouchInputOffset = XorString::encrypt("DD948B0");
         
-        inline constexpr auto KeyboardMouseInputOffset = XorString::encrypt("DD8D7F0"); 
-
-     
+        // inline constexpr auto KeyboardMouseInputOffset = XorString::encrypt("DD8D7F0"); 
     }
     
     namespace OS {
@@ -124,8 +135,7 @@ namespace EncryptedPatterns {
 
         inline constexpr auto TouchInputOffset = XorString::encrypt("DD9C9B0");
         
-        inline constexpr auto KeyboardMouseInputOffset = XorString::encrypt("DDA7870");
-
+        // inline constexpr auto KeyboardMouseInputOffset = XorString::encrypt("DDA7870");
     }
 }
 
@@ -144,7 +154,7 @@ namespace Offsets {
     extern std::string ClockPageCloseOffset;
     extern std::string ResinListOffset;
     extern std::string TouchInputOffset;
-    extern std::string KeyboardMouseInputOffset;
+    // extern std::string KeyboardMouseInputOffset;
 
     void InitOffsets(bool isOS);
 }

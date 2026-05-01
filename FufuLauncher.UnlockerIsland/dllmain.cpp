@@ -11,6 +11,9 @@
 #include <wincrypt.h>
 #include <filesystem>
 #include <fstream>
+#include <regex>
+#include <mutex>
+#include <atomic>
 
 #include "Config.h"
 #include "Hooks.h"
@@ -23,6 +26,76 @@
 #ifndef CALG_SHA256
 #define CALG_SHA256 0x0000800C
 #endif
+
+std::atomic<bool> g_ShouldShowDialog{false};
+std::atomic<bool> g_StopDialogPolling{false};
+std::string g_DialogText = "";
+std::mutex g_DialogMutex;
+
+void DialogWorker() {
+    std::string lastText = "";
+    while (true) {
+        if (g_StopDialogPolling.load()) {
+            break; 
+        }
+
+        HINTERNET hInternet = InternetOpenA("FufuLauncher Unlock/1.1.0.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+        if (hInternet) {
+            DWORD timeout = 5000;
+            InternetSetOptionA(hInternet, INTERNET_OPTION_CONNECT_TIMEOUT, &timeout, sizeof(DWORD));
+
+            HINTERNET hConnect = InternetOpenUrlA(hInternet, "https://philia093.cyou/dialog.json", NULL, 0, INTERNET_FLAG_RELOAD | INTERNET_FLAG_SECURE, 0);
+            if (hConnect) {
+                char buffer[1024];
+                DWORD bytesRead;
+                std::string response = "";
+                
+                while (InternetReadFile(hConnect, buffer, sizeof(buffer) - 1, &bytesRead) && bytesRead > 0) {
+                    buffer[bytesRead] = '\0';
+                    response += buffer;
+                }
+
+                if (!response.empty()) {
+                    std::regex dialogRegex(R"REGEX("dialog"\s*:\s*(true|false))REGEX");
+                    std::regex textRegex(R"REGEX("text"\s*:\s*"((?:\\.|[^"\\])*)")REGEX");
+                    std::smatch match;
+                    bool isDialog = false;
+
+                    if (std::regex_search(response, match, dialogRegex)) {
+                        if (match[1].str() == "true") {
+                            isDialog = true;
+                        }
+                    }
+
+                    if (isDialog && std::regex_search(response, match, textRegex)) {
+                        std::string currentText = match[1].str();
+                        
+                        size_t pos = 0;
+                        while ((pos = currentText.find("\\n", pos)) != std::string::npos) {
+                            currentText.replace(pos, 2, "\n");
+                            pos += 1;
+                        }
+                        pos = 0;
+                        while ((pos = currentText.find("\\\"", pos)) != std::string::npos) {
+                            currentText.replace(pos, 2, "\"");
+                            pos += 1;
+                        }
+
+                        if (currentText != lastText) {
+                            lastText = currentText;
+                            std::lock_guard<std::mutex> lock(g_DialogMutex);
+                            g_DialogText = currentText;
+                            g_ShouldShowDialog.store(true);
+                        }
+                    }
+                }
+                InternetCloseHandle(hConnect);
+            }
+            InternetCloseHandle(hInternet);
+        }
+        Sleep(5 * 60 * 1000);
+    }
+}
 
 inline FILETIME GetFileLastWriteTime(const std::string& path) {
     FILETIME lastWriteTime = { 0, 0 };
@@ -233,6 +306,8 @@ void MainWorker(HMODULE hMod) {
         while (!Hooks::IsGameUpdateInit()) {
             Sleep(1000);
         }
+        
+        std::thread(DialogWorker).detach();
 
         while (true) {
             uint32_t currentUID = Hooks::GetCurrentUID();

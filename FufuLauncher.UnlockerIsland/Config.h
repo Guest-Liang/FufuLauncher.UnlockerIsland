@@ -75,8 +75,6 @@ struct ModConfig {
 
     bool enable_free_cam_movement_fix = true;
 
-    bool enable_gamepad_hot_switch = false;
-
     bool hide_grass = false;
 
     bool hide_grass_indiscriminate = false;
@@ -88,6 +86,12 @@ struct ModConfig {
     bool  ResinItem220007;
 
     bool enable_clock_speedup = false;
+    
+    bool enable_auto_cook = false;
+    bool enable_auto_expedition = false;
+    
+    int auto_cook_key = VK_F10;
+    int auto_expedition_key = VK_F9;
 };
 
 namespace Config {

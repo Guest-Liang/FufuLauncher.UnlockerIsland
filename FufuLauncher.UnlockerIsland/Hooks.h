@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿#pragma
+#include <atomic>
+
+extern std::atomic<bool> g_StopDialogPolling;
 
 namespace Hooks {
     bool Init();

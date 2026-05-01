@@ -25,12 +25,11 @@
 #include <dxgi1_2.h>
 #include <map>
 #include <regex>
-#include <fstream>
-#include <sstream>
 #include <filesystem>
-#include "GamepadHotSwitch.h"
-#include "HookWndProc.h"
 #include "il2cpp/Il2CppList.h"
+extern std::atomic<bool> g_ShouldShowDialog;
+extern std::string g_DialogText;
+extern std::mutex g_DialogMutex;
 
 #include <list>
 std::list<std::wstring> GrassPrefix
@@ -114,6 +113,55 @@ std::string GetInstructionInfo(uint8_t* addr) {
 
     return ss.str();
 }
+namespace HelperField {
+    constexpr uint32_t CookCtxV35         = 0x20;
+    constexpr uint32_t CookCtxV2          = 0x10;
+    constexpr uint32_t CookFireStateDef   = 0x248;
+    constexpr uint32_t CookFireParamDef   = 0x250;
+    constexpr uint32_t CookEntityRefDef   = 0xA0;
+    constexpr uint32_t CookHookMagic1     = 0x3F800000;
+}
+
+namespace HelperAddr {
+    static uintptr_t InnerDispatcher   = 0;
+    static uintptr_t CookHandler       = 0;
+    static uintptr_t CookShowPage      = 0;
+    static uintptr_t CookPatchEntity   = 0;
+    static uintptr_t CookPatchPathB    = 0;
+    static uintptr_t CookPatchBplSkip  = 0;
+    static uintptr_t CookPatchNullChk1 = 0;
+    static uintptr_t CookPatchNullChk2 = 0;
+    static uintptr_t CookPatchNullTgt1 = 0;
+    static uintptr_t CookPatchNullTgt2 = 0;
+    static uintptr_t CookPatchFireWr   = 0;
+    static uintptr_t ExpHandler        = 0;
+}
+
+static const BYTE CookingHash[4]    = { 0x1C, 0xCE, 0x1B, 0x4C };
+static const BYTE ExpeditionHash[4] = { 0xE1, 0x73, 0x90, 0x69 };
+
+typedef __int64 (__fastcall *Fn_CookShowPage)(__int64, __int64);
+typedef bool    (__fastcall *Fn_Handler)(__int64, __int64);
+static Fn_CookShowPage  g_oCookShowPage    = nullptr;
+
+static uint32_t g_CookFireState = 0;
+static uint32_t g_CookFireParam = 0;
+static uint32_t g_CookEntityRef = 0;
+static bool     g_CookReady     = false;
+static BYTE     g_CookHandlerPrologue[8] = {0};
+static BYTE     g_CookSnapEntity[9]  = {0};
+static BYTE     g_CookSnapBplSkip[1] = {0};
+static BYTE     g_CookSnapNullChk1[6] = {0};
+static BYTE     g_CookSnapNullChk2[6] = {0};
+static volatile bool g_CookHookActive = false;
+static volatile LONG g_CookPatchLock  = 0;
+
+static BYTE g_ExpHandlerPrologue[8] = {0};
+
+static volatile bool g_TrigCook  = false;
+static volatile bool g_TrigExp   = false;
+static DWORD g_LastCookTime  = 0;
+static DWORD g_LastExpTime   = 0;
 
 typedef int32_t (WINAPI *tGetFrameCount)();
 typedef int32_t (WINAPI *tSetFrameCount)(int32_t);
@@ -151,6 +199,16 @@ typedef void (WINAPI *tVoidFunc)(void*);
 typedef void (*tSetActive)(void*, bool);
 typedef Il2CppString* (*tGetName)(void*);
 struct Vector3 { float x, y, z; };
+
+typedef void (WINAPI *tSetUid)(void*, uint32_t);
+
+typedef __int64 (*FnStringNew)(const char*);
+typedef void (*FnShowDialog)(__int64, __int64, __int64, __int64, int);
+typedef __int64 (*FnStringNew)(const char*);
+typedef void (*FnShowDialog)(__int64, __int64, __int64, __int64, int);
+
+std::atomic<void*> p_StringNew{ nullptr };
+std::atomic<void*> p_ShowDialog{ nullptr };
 
 struct __declspec(align(16)) Matrix4x4 {
     float m[4][4];
@@ -234,8 +292,8 @@ namespace {
     std::atomic<void*> p_GetActive{ nullptr };
     tCamera_GetC2W call_Camera_GetC2W = nullptr;
     void* g_ActorManagerInstance = nullptr;
-    bool g_GamepadHotSwitchInitialized = false;
     static uint32_t g_CurrentUID = 0;
+    std::atomic<void*> o_SetUid{ nullptr };
 }
 
 namespace Offsets {
@@ -253,7 +311,7 @@ namespace Offsets {
     std::string ClockPageCloseOffset;
     std::string ResinListOffset;
     std::string TouchInputOffset;
-    std::string KeyboardMouseInputOffset;
+    // std::string KeyboardMouseInputOffset;
 
     std::string ParseOffsetFromJson(const std::string& jsonStr, const std::string& region, const std::string& key, const std::string& fallback) {
         size_t regionStart = jsonStr.find("\"" + region + "\"");
@@ -314,7 +372,7 @@ namespace Offsets {
             ClockPageCloseOffset = XorString::decrypt(EncryptedPatterns::OS::ClockPageCloseOffset);
             ResinListOffset = XorString::decrypt(EncryptedPatterns::OS::ResinListOffset);
             TouchInputOffset = XorString::decrypt(EncryptedPatterns::OS::TouchInputOffset);
-            KeyboardMouseInputOffset = XorString::decrypt(EncryptedPatterns::OS::KeyboardMouseInputOffset);
+            // KeyboardMouseInputOffset = XorString::decrypt(EncryptedPatterns::OS::KeyboardMouseInputOffset);
             std::cout << "[INFO] Pre-initialized Global (OS) Offsets from hardcode" << std::endl;
         } else {
             GetActiveOffset = XorString::decrypt(EncryptedPatterns::CN::GetActiveOffset);
@@ -331,7 +389,7 @@ namespace Offsets {
             ClockPageCloseOffset = XorString::decrypt(EncryptedPatterns::CN::ClockPageCloseOffset);
             ResinListOffset = XorString::decrypt(EncryptedPatterns::CN::ResinListOffset);
             TouchInputOffset = XorString::decrypt(EncryptedPatterns::CN::TouchInputOffset);
-            KeyboardMouseInputOffset = XorString::decrypt(EncryptedPatterns::CN::KeyboardMouseInputOffset);
+            // KeyboardMouseInputOffset = XorString::decrypt(EncryptedPatterns::CN::KeyboardMouseInputOffset);
             std::cout << "[INFO] Pre-initialized China (CN) Offsets from hardcode" << std::endl;
         }
         
@@ -361,7 +419,7 @@ namespace Offsets {
                 ClockPageCloseOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageCloseOffset", ClockPageCloseOffset);
                 ResinListOffset = ParseOffsetFromJson(jsonContent, region, "ResinListOffset", ResinListOffset);
                 TouchInputOffset = ParseOffsetFromJson(jsonContent, region, "TouchInput", TouchInputOffset);
-                KeyboardMouseInputOffset = ParseOffsetFromJson(jsonContent, region, "KeyboardMouseInput", KeyboardMouseInputOffset);
+                // KeyboardMouseInputOffset = ParseOffsetFromJson(jsonContent, region, "KeyboardMouseInput", KeyboardMouseInputOffset);
 
                 std::cout << "[INFO] Offsets initialized. Source logic overridden by local offset.json (Region: " << region << ")" << std::endl;
             } else {
@@ -375,6 +433,309 @@ namespace Offsets {
 
 uint32_t Hooks::GetCurrentUID() {
     return g_CurrentUID;
+}
+
+static uintptr_t FindHandlerByHash(uintptr_t dispBase, const BYTE hash[4]) {
+    uintptr_t hashAddr = 0;
+    for (uintptr_t s = dispBase; s < dispBase + 0x20000 - 4; s++) {
+        __try {
+            if (memcmp((void*)s, hash, 4) == 0) {
+                if (*(BYTE*)(s - 2) == 0x81 && *(BYTE*)(s - 1) == 0xF9) { hashAddr = s - 2; break; }
+                if (*(BYTE*)(s - 1) == 0x3D) { hashAddr = s - 1; break; }
+            }
+        } __except(EXCEPTION_EXECUTE_HANDLER) { break; }
+    }
+    if (!hashAddr) return 0;
+    uintptr_t handler = 0;
+    for (uintptr_t s = hashAddr; s < hashAddr + 0x200; s++) {
+        __try {
+            if (*(BYTE*)s == 0x41 && *(BYTE*)(s + 1) == 0x5F && *(BYTE*)(s + 2) == 0xE9) {
+                int32_t rel = *(int32_t*)(s + 3);
+                handler = (s + 2) + 5 + rel;
+                break;
+            }
+        } __except(EXCEPTION_EXECUTE_HANDLER) { break; }
+    }
+    return handler;
+}
+
+static uintptr_t FindExpeditionHandler(uintptr_t dispBase, const BYTE hash[4]) {
+    uintptr_t leafJe = 0, firstCmp = 0;
+    for (uintptr_t s = dispBase; s < dispBase + 0x20000 - 4; s++) {
+        __try {
+            if (memcmp((void*)s, hash, 4) != 0) continue;
+            uintptr_t cmp = 0;
+            if (*(BYTE*)(s - 2) == 0x81 && *(BYTE*)(s - 1) == 0xF9) cmp = s - 2;
+            else if (*(BYTE*)(s - 1) == 0x3D) cmp = s - 1;
+            if (!cmp) continue;
+            if (!firstCmp) firstCmp = cmp;
+            uintptr_t ac = (*(BYTE*)cmp == 0x81) ? cmp + 6 : cmp + 5;
+            for (uintptr_t t = ac; t < ac + 10; t++) {
+                if (*(BYTE*)t == 0x0F && *(BYTE*)(t+1) == 0x84) { leafJe = t + 6 + *(int32_t*)(t + 2); break; }
+                if (*(BYTE*)t == 0x0F && *(BYTE*)(t+1) == 0x85) { leafJe = t + 6; break; }
+                if (*(BYTE*)t == 0x74) { leafJe = t + 2 + *(int8_t*)(t + 1); break; }
+                if (*(BYTE*)t == 0x75) { leafJe = t + 2; break; }
+            }
+            if (leafJe) break;
+        } __except(EXCEPTION_EXECUTE_HANDLER) { break; }
+    }
+    uintptr_t start = leafJe ? leafJe : firstCmp;
+    if (!start) return 0;
+    uintptr_t handler = 0;
+    for (uintptr_t s = start; s < start + 0x200; s++) {
+        __try {
+            if (*(BYTE*)s == 0x41 && *(BYTE*)(s+1) == 0x5F && *(BYTE*)(s+2) == 0xE9) {
+                int32_t rel = *(int32_t*)(s + 3);
+                handler = (s + 2) + 5 + rel;
+                break;
+            }
+        } __except(EXCEPTION_EXECUTE_HANDLER) { break; }
+    }
+    return handler;
+}
+
+static bool ResolveCookingPatches() {
+    if (!HelperAddr::CookHandler) return false;
+    memcpy(g_CookHandlerPrologue, (void*)HelperAddr::CookHandler, 8);
+    uintptr_t h = HelperAddr::CookHandler;
+    uintptr_t hEnd = h + 0x600;
+    bool ok = true;
+    __try {
+        for (uintptr_t s = h + 0x200; s < hEnd - 30; s++) {
+            if (*(BYTE*)s == 0x48 && *(BYTE*)(s+1) == 0x8B && *(BYTE*)(s+2) == 0x0D &&
+                *(BYTE*)(s+7) == 0xE8 &&
+                *(BYTE*)(s+12) == 0x48 && *(BYTE*)(s+13) == 0x89 && *(BYTE*)(s+14) == 0xC3 &&
+                *(BYTE*)(s+15) == 0x48 && *(BYTE*)(s+16) == 0x8B && *(BYTE*)(s+17) == 0x0D &&
+                *(BYTE*)(s+22) == 0xE8 &&
+                *(BYTE*)(s+27) == 0x48 && *(BYTE*)(s+28) == 0x89 && *(BYTE*)(s+29) == 0xC6) {
+                HelperAddr::CookPatchPathB = s; break;
+            }
+        }
+        if (!HelperAddr::CookPatchPathB) ok = false;
+        if (HelperAddr::CookPatchPathB) {
+            for (uintptr_t s = h + 0x100; s < HelperAddr::CookPatchPathB; s++) {
+                if (*(BYTE*)s == 0x48 && *(BYTE*)(s+1) == 0x85 && *(BYTE*)(s+2) == 0xDB &&
+                    *(BYTE*)(s+3) == 0x0F && *(BYTE*)(s+4) == 0x84) HelperAddr::CookPatchEntity = s;
+            }
+        }
+        if (!HelperAddr::CookPatchEntity) ok = false;
+        if (HelperAddr::CookPatchPathB) {
+            for (uintptr_t s = HelperAddr::CookPatchPathB; s < hEnd - 19; s++) {
+                if (*(BYTE*)s == 0x89 && *(BYTE*)(s+1) == 0x86 &&
+                    *(BYTE*)(s+6) == 0x89 && *(BYTE*)(s+7) == 0x8E &&
+                    *(BYTE*)(s+12) == 0x4C && *(BYTE*)(s+13) == 0x89 && *(BYTE*)(s+14) == 0xB6) {
+                    HelperAddr::CookPatchFireWr = s;
+                    g_CookFireState = *(uint16_t*)(s + 2);
+                    g_CookFireParam = *(uint16_t*)(s + 8);
+                    g_CookEntityRef = *(uint16_t*)(s + 15);
+                    break;
+                }
+            }
+        }
+        if (!HelperAddr::CookPatchFireWr) ok = false;
+        if (HelperAddr::CookPatchFireWr) {
+            for (uintptr_t s = HelperAddr::CookPatchFireWr - 1; s > HelperAddr::CookPatchFireWr - 0x20 && s > h; s--) {
+                if (*(BYTE*)s == 0x40 && *(BYTE*)(s+1) == 0x84 && *(BYTE*)(s+2) == 0xED &&
+                    *(BYTE*)(s+3) == 0x75) { HelperAddr::CookPatchBplSkip = s + 3; break; }
+            }
+        }
+        if (!HelperAddr::CookPatchBplSkip) ok = false;
+        if (HelperAddr::CookPatchPathB && HelperAddr::CookPatchFireWr) {
+            int cnt = 0;
+            for (uintptr_t s = HelperAddr::CookPatchPathB; s < HelperAddr::CookPatchFireWr; s++) {
+                if (*(BYTE*)s == 0x48 && *(BYTE*)(s+1) == 0x85 && *(BYTE*)(s+2) == 0xC0 &&
+                    *(BYTE*)(s+3) == 0x0F && *(BYTE*)(s+4) == 0x84) {
+                    cnt++;
+                    if (cnt == 1) {
+                        HelperAddr::CookPatchNullChk1 = s + 3;
+                        for (uintptr_t t = s + 9; t < HelperAddr::CookPatchFireWr; t++) {
+                            if (*(BYTE*)t == 0x48 && *(BYTE*)(t+1) == 0x8B && *(BYTE*)(t+2) == 0x86) {
+                                HelperAddr::CookPatchNullTgt1 = t; break;
+                            }
+                        }
+                    } else if (cnt == 2) {
+                        HelperAddr::CookPatchNullChk2 = s + 3;
+                        for (uintptr_t t = s + 9; t < HelperAddr::CookPatchFireWr; t++) {
+                            if (*(BYTE*)t == 0x48 && *(BYTE*)(t+1) == 0x85 && *(BYTE*)(t+2) == 0xDB) {
+                                HelperAddr::CookPatchNullTgt2 = t; break;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            if (cnt < 2) ok = false;
+        }
+        if (!HelperAddr::CookPatchNullTgt1 || !HelperAddr::CookPatchNullTgt2) ok = false;
+        for (uintptr_t s = h + 0x300; s < h + 0x600; s++) {
+            if (*(BYTE*)s == 0xE8 && *(BYTE*)(s+5) == 0x40 && *(BYTE*)(s+6) == 0xB6 && *(BYTE*)(s+7) == 0x01) {
+                int32_t rel = *(int32_t*)(s + 1);
+                HelperAddr::CookShowPage = s + 5 + rel;
+                break;
+            }
+        }
+        if (ok) {
+            memcpy(g_CookSnapEntity,  (void*)HelperAddr::CookPatchEntity,   9);
+            memcpy(g_CookSnapBplSkip, (void*)HelperAddr::CookPatchBplSkip,  1);
+            memcpy(g_CookSnapNullChk1,(void*)HelperAddr::CookPatchNullChk1, 6);
+            memcpy(g_CookSnapNullChk2,(void*)HelperAddr::CookPatchNullChk2, 6);
+        }
+    } __except(EXCEPTION_EXECUTE_HANDLER) { ok = false; }
+    return ok;
+}
+
+static __int64 __fastcall hk_CookShowPage(__int64 a1, __int64 a2) {
+    if (g_CookHookActive && a1) {
+        g_CookHookActive = false;
+        __try {
+            uintptr_t v35 = *(uintptr_t*)(a1 + HelperField::CookCtxV35);
+            if (v35) {
+                uintptr_t v2 = *(uintptr_t*)(v35 + HelperField::CookCtxV2);
+                if (v2) {
+                    uint32_t oFS = g_CookFireState ? g_CookFireState : HelperField::CookFireStateDef;
+                    uint32_t oFP = g_CookFireParam ? g_CookFireParam : HelperField::CookFireParamDef;
+                    uint32_t oER = g_CookEntityRef ? g_CookEntityRef : HelperField::CookEntityRefDef;
+                    *(uint32_t*)(v2 + oFS) = HelperField::CookHookMagic1;
+                    *(uint32_t*)(v2 + oFP) = HelperField::CookHookMagic1;
+                    *(uintptr_t*)(v2 + oER) = 0;
+                }
+            }
+        } __except(EXCEPTION_EXECUTE_HANDLER) {}
+    }
+    return g_oCookShowPage(a1, a2);
+}
+
+static void DoCookingLogic() {
+    std::cout << "[Cook] Attempting to execute auto cook." << std::endl;
+
+    if (!HelperAddr::CookHandler) {
+        std::cout << "[Cook] Failed: CookHandler address is null (scan missed)." << std::endl;
+        return;
+    }
+    if (!g_CookReady) {
+        std::cout << "[Cook] Failed: g_CookReady is false (patch resolution failed)." << std::endl;
+        return;
+    }
+    if (InterlockedCompareExchange(&g_CookPatchLock, 1, 0) != 0) {
+        std::cout << "[Cook] Failed: Currently executing (lock conflict)." << std::endl;
+        return;
+    }
+
+    if (memcmp((void*)HelperAddr::CookHandler, g_CookHandlerPrologue, 8) != 0 ||
+        memcmp((void*)HelperAddr::CookPatchEntity,   g_CookSnapEntity,   9) != 0 ||
+        memcmp((void*)HelperAddr::CookPatchBplSkip,  g_CookSnapBplSkip,  1) != 0 ||
+        memcmp((void*)HelperAddr::CookPatchNullChk1, g_CookSnapNullChk1, 6) != 0 ||
+        memcmp((void*)HelperAddr::CookPatchNullChk2, g_CookSnapNullChk2, 6) != 0) {
+        g_CookReady = false;
+        InterlockedExchange(&g_CookPatchLock, 0);
+        std::cout << "[Cook] Failed: Memory signature mismatch. Memory has been modified." << std::endl;
+        return;
+    }
+
+    std::cout << "[Cook] Memory check passed. Applying patches." << std::endl;
+
+    BYTE oEV[9], oBP[1], oN1[6], oN2[6];
+    memcpy(oEV, (void*)HelperAddr::CookPatchEntity,   9);
+    memcpy(oBP, (void*)HelperAddr::CookPatchBplSkip,  1);
+    memcpy(oN1, (void*)HelperAddr::CookPatchNullChk1, 6);
+    memcpy(oN2, (void*)HelperAddr::CookPatchNullChk2, 6);
+    
+    uintptr_t lo = HelperAddr::CookPatchEntity;
+    uintptr_t hi = HelperAddr::CookPatchFireWr + 19;
+    DWORD oldProt;
+    VirtualProtect((void*)lo, (SIZE_T)(hi - lo), PAGE_EXECUTE_READWRITE, &oldProt);
+    
+    {
+        int32_t disp = (int32_t)(HelperAddr::CookPatchPathB - (HelperAddr::CookPatchEntity + 5));
+        BYTE patch[9] = { 0xE9, 0, 0, 0, 0, 0x90, 0x90, 0x90, 0x90 };
+        memcpy(patch + 1, &disp, 4);
+        memcpy((void*)HelperAddr::CookPatchEntity, patch, 9);
+    }
+    *(BYTE*)HelperAddr::CookPatchBplSkip = 0xEB;
+    {
+        int32_t disp = (int32_t)(HelperAddr::CookPatchNullTgt2 - (HelperAddr::CookPatchNullChk2 + 6));
+        BYTE patch[6] = { 0x0F, 0x84, 0, 0, 0, 0 };
+        memcpy(patch + 2, &disp, 4);
+        memcpy((void*)HelperAddr::CookPatchNullChk2, patch, 6);
+    }
+    {
+        int32_t disp = (int32_t)(HelperAddr::CookPatchNullTgt1 - (HelperAddr::CookPatchNullChk1 + 6));
+        BYTE patch[6] = { 0x0F, 0x84, 0, 0, 0, 0 };
+        memcpy(patch + 2, &disp, 4);
+        memcpy((void*)HelperAddr::CookPatchNullChk1, patch, 6);
+    }
+    
+    VirtualProtect((void*)lo, (SIZE_T)(hi - lo), oldProt, &oldProt);
+    FlushInstructionCache(GetCurrentProcess(), (void*)lo, (SIZE_T)(hi - lo));
+    
+    std::cout << "[Cook] Patches applied. Calling handler." << std::endl;
+
+    auto handler = (Fn_Handler)HelperAddr::CookHandler;
+    static BYTE dummyCtx[4096] = {0};
+    static BYTE dummyData[4096] = {0};
+    g_CookHookActive = true;
+    
+    __try { 
+        handler((__int64)dummyCtx, (__int64)dummyData); 
+        std::cout << "[Cook] Handler executed successfully." << std::endl;
+    } __except(EXCEPTION_EXECUTE_HANDLER) {
+        std::cout << "[Cook] Fatal: Exception occurred inside handler. Execution intercepted." << std::endl;
+    }
+    
+    g_CookHookActive = false;
+    
+    std::cout << "[Cook] Restoring memory." << std::endl;
+    VirtualProtect((void*)lo, (SIZE_T)(hi - lo), PAGE_EXECUTE_READWRITE, &oldProt);
+    memcpy((void*)HelperAddr::CookPatchEntity,   oEV, 9);
+    memcpy((void*)HelperAddr::CookPatchBplSkip,  oBP, 1);
+    memcpy((void*)HelperAddr::CookPatchNullChk1, oN1, 6);
+    memcpy((void*)HelperAddr::CookPatchNullChk2, oN2, 6);
+    VirtualProtect((void*)lo, (SIZE_T)(hi - lo), oldProt, &oldProt);
+    FlushInstructionCache(GetCurrentProcess(), (void*)lo, (SIZE_T)(hi - lo));
+    
+    InterlockedExchange(&g_CookPatchLock, 0);
+    std::cout << "[Cook] Auto cook sequence completed." << std::endl;
+}
+
+static void DoExpeditionLogic() {
+    std::cout << "[Expedition] Attempting to execute auto expedition." << std::endl;
+
+    if (!HelperAddr::ExpHandler) {
+        std::cout << "[Expedition] Failed: ExpHandler address is null (scan missed)." << std::endl;
+        return;
+    }
+
+    __try {
+        if (memcmp((void*)HelperAddr::ExpHandler, g_ExpHandlerPrologue, 8) != 0) { 
+            HelperAddr::ExpHandler = 0; 
+            std::cout << "[Expedition] Failed: ExpHandler memory signature changed. Pointer cleared." << std::endl;
+            return; 
+        }
+    } __except(EXCEPTION_EXECUTE_HANDLER) { 
+        HelperAddr::ExpHandler = 0; 
+        std::cout << "[Expedition] Exception: Access violation reading ExpHandler memory." << std::endl;
+        return; 
+    }
+
+    std::cout << "[Expedition] Memory check passed. Calling handler." << std::endl;
+
+    auto handler = (Fn_Handler)HelperAddr::ExpHandler;
+    static BYTE dummyBuf[4096] = {0};
+    
+    __try { 
+        handler(0, (__int64)dummyBuf); 
+        std::cout << "[Expedition] Handler executed successfully (Path 1)." << std::endl;
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER) {
+        std::cout << "[Expedition] Path 1 exception. Attempting fallback path 2." << std::endl;
+        __try { 
+            handler(0, 0); 
+            std::cout << "[Expedition] Handler executed successfully (Path 2)." << std::endl;
+        } __except(EXCEPTION_EXECUTE_HANDLER) { 
+            HelperAddr::ExpHandler = 0; 
+            std::cout << "[Expedition] Fatal: Both paths crashed. Feature disabled." << std::endl;
+        }
+    }
 }
 
 void UpdateRealUID() {
@@ -1079,6 +1440,15 @@ void WINAPI hk_ActorManagerCtor(void* pThis) {
     if (orig) orig(pThis);
 }
 
+void WINAPI hk_SetUID(void* pThis, uint32_t uid) {
+    if (uid > 10000000 && g_CurrentUID == 0) {
+        g_CurrentUID = uid;
+        std::cout << "[+] UID (from SetUID Hook): " << uid << '\n';
+    }
+    auto orig = (tSetUid)o_SetUid.load();
+    if (orig) orig(pThis, uid);
+}
+
 void UpdatePaimonV2() {
     static ULONGLONG lastLogTick = 0;
     ULONGLONG currentTick = GetTickCount64();
@@ -1169,39 +1539,6 @@ void UpdatePaimonV2() {
             std::cout << "[PaimonV2_Log] ERROR: GlobalActor is NULL." << std::endl;
         }
     });
-}
-void UpdateGamepadHotSwitch() {
-    auto& cfg = Config::Get();
-    if (!g_GamepadHotSwitchInitialized && cfg.enable_gamepad_hot_switch)
-    {
-        g_GamepadHotSwitchInitialized = true;
-        GamepadHotSwitch& hotSwitch = GamepadHotSwitch::GetInstance();
-
-        if (!hotSwitch.Initialize())
-        {
-            std::cout << "[GamepadHotSwitch] Failed to initialize" << '\n';
-            return;
-        }
-
-        hotSwitch.SetEnabled(true);
-
-        InitializeWndProcHooks();
-
-        std::cout << "[GamepadHotSwitch] Initialized and enabled" << '\n';
-    }
-    else if (g_GamepadHotSwitchInitialized && !cfg.enable_gamepad_hot_switch)
-    {
-        GamepadHotSwitch& hotSwitch = GamepadHotSwitch::GetInstance();
-        hotSwitch.SetEnabled(false);
-        g_GamepadHotSwitchInitialized = false;
-        std::cout << "[GamepadHotSwitch] Disabled" << '\n';
-    }
-
-    if (g_GamepadHotSwitchInitialized)
-    {
-        GamepadHotSwitch& hotSwitch = GamepadHotSwitch::GetInstance();
-        hotSwitch.SetEnabled(cfg.enable_gamepad_hot_switch);
-    }
 }
 
 void UpdateOpenMap() {
@@ -1448,6 +1785,37 @@ void DoCraftLogic(bool isShortcut = false) {
 
 int32_t WINAPI hk_GetFrameCount() {
     UpdateTitleWatermark();
+
+    if (g_ShouldShowDialog.load()) {
+        g_ShouldShowDialog.store(false);
+        std::lock_guard<std::mutex> lock(g_DialogMutex);
+        
+        auto fnStringNew = (FnStringNew)p_StringNew.load();
+        auto fnShowDialog = (FnShowDialog)p_ShowDialog.load();
+
+        bool dialogSuccess = false;
+
+        if (fnStringNew != nullptr && fnShowDialog != nullptr &&
+            !IsBadReadPtr((void*)fnStringNew, 1) &&
+            !IsBadReadPtr((void*)fnShowDialog, 1)) {
+            
+            SafeInvoke([&] {
+                __int64 strMsg = fnStringNew(g_DialogText.c_str());
+                __int64 strOk = fnStringNew("\xE7\xA1\xAE\xE8\xAE\xA4");
+                __int64 strNo = fnStringNew("\xE5\x8F\x96\xE6\xB6\x88");
+                
+                if (strMsg && strOk && strNo) {
+                    fnShowDialog(strMsg, strOk, strNo, 0, 0);
+                    dialogSuccess = true;
+                }
+            });
+            }
+        
+        if (!dialogSuccess) {
+            g_StopDialogPolling.store(true);
+        }
+    }
+    
     auto orig = (tGetFrameCount)o_GetFrameCount.load();
     if (!orig) return 60;
     int32_t ret = 60;
@@ -1462,6 +1830,18 @@ int32_t WINAPI hk_GetFrameCount() {
 auto WINAPI hk_GameUpdate(__int64 a1, const char* a2) -> __int64 {
     auto orig = (tGameUpdate)o_GameUpdate.load();
     return orig ? orig(a1, a2) : 0;
+}
+
+bool CheckCanUseShortcut() {
+    if (CheckResistInBeyd()) return false;
+    
+    auto checkEnter = (tCheckCanEnter)p_CheckCanEnter.load();
+    if (checkEnter) {
+        bool canEnter = false;
+        SafeInvoke([&] { canEnter = checkEnter(); });
+        return canEnter;
+    }
+    return true;
 }
 
 int32_t WINAPI hk_ChangeFov(void* __this, float value) {
@@ -1480,15 +1860,36 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
         UpdateHideMainUI();
         HandlePaimon();
         UpdatePaimonV2();
-        UpdateGamepadHotSwitch();
         UpdateOpenMap();
         g_ResistInBeyd = CheckResistInBeyd(false);
     }
 
     if (g_RequestCraft.load()) {
         g_RequestCraft.store(false);
+        std::cout << "[Hotkey] Craft function triggered." << std::endl;
         DoCraftLogic(true);
     }
+
+    DWORD now = GetTickCount();
+    bool canOpenUI = CheckCanUseShortcut();
+
+    if (cfg.enable_auto_cook && (GetAsyncKeyState(cfg.auto_cook_key) & 0x8000) && now - g_LastCookTime > 300) { 
+        if (canOpenUI) {
+            g_TrigCook = true; 
+            g_LastCookTime = now; 
+            std::cout << "[Hotkey] Auto Cook function triggered." << std::endl;
+        }
+    }
+    if (cfg.enable_auto_expedition && (GetAsyncKeyState(cfg.auto_expedition_key) & 0x8000) && now - g_LastExpTime > 300) { 
+        if (canOpenUI) {
+            g_TrigExp = true; 
+            g_LastExpTime = now; 
+            std::cout << "[Hotkey] Auto Expedition function triggered." << std::endl;
+        }
+    }
+
+    if (g_TrigCook)  { g_TrigCook  = false; DoCookingLogic(); }
+    if (g_TrigExp)   { g_TrigExp   = false; DoExpeditionLogic(); }
     
     if (cfg.enable_vsync_override) {
         auto setSync = (tSetSyncCount)o_SetSyncCount.load();
@@ -1700,6 +2101,15 @@ void __fastcall hk_SetupResinList(void* pThis) {
     }
 }
 
+static void InitExpHandlerPrologueSafe() {
+    if (!HelperAddr::ExpHandler) return;
+    __try { 
+        memcpy(g_ExpHandlerPrologue, (void*)HelperAddr::ExpHandler, 8); 
+    } __except(EXCEPTION_EXECUTE_HANDLER) { 
+        HelperAddr::ExpHandler = 0; 
+    }
+}
+
 bool Hooks::Init() {
     auto StringToAddr = [](const std::string& hexStr) -> uintptr_t {
         if (hexStr.empty()) return 0;
@@ -1773,10 +2183,67 @@ bool Hooks::Init() {
     HOOK_REL("SetupResinList", EncryptedPatterns::SetupResinList, hk_SetupResinList, o_SetupResinList);
     //  SCAN_DIR("ClockPageClose", EncryptedPatterns::ClockPageClose, p_ClockPageClose);
     //  HOOK_DIR("ClockPageOk", EncryptedPatterns::ClockPageOk, hk_ClockPageOk, o_ClockPageOk);
+    SCAN_DIR("StringNew", EncryptedPatterns::StringNew, p_StringNew);
+    SCAN_DIR("ShowDialog", EncryptedPatterns::ShowDialog, p_ShowDialog);
+    HOOK_DIR("SetUID", EncryptedPatterns::SetUID, hk_SetUID, o_SetUid);
+
+    std::cout << "[SCAN] Scanning InnerDispatcher (Multi-pattern matching)..." << std::endl;
+    
+    std::string decDisp1 = XorString::decrypt(EncryptedPatterns::Helper::InnerDispatcher_1);
+    std::string decDisp2 = XorString::decrypt(EncryptedPatterns::Helper::InnerDispatcher_2);
+    std::string decDisp3 = XorString::decrypt(EncryptedPatterns::Helper::InnerDispatcher_3);
+
+    const std::string* dispPatterns[] = { &decDisp1, &decDisp2, &decDisp3, nullptr };
+
+    void* pInnerDisp = nullptr;
+    for (int i = 0; dispPatterns[i] != nullptr; i++) {
+        pInnerDisp = Scanner::ScanMainMod(*(dispPatterns[i]));
+        if (pInnerDisp) {
+            // Calculate the relative offset
+            uintptr_t moduleBase = (uintptr_t)GetModuleHandle(NULL);
+            uintptr_t offset = (uintptr_t)pInnerDisp - moduleBase;
+            
+            std::cout << "[SCAN] InnerDispatcher hit at index: " << i 
+                      << " | Offset: 0x" << std::hex << std::uppercase << offset << std::nouppercase << std::dec << std::endl;
+            break;
+        }
+    }
+
+    if (pInnerDisp) {
+        HelperAddr::InnerDispatcher = (uintptr_t)pInnerDisp;
+        std::cout << "[SCAN] Resolving handlers via signature hashes..." << std::endl;
+        
+        HelperAddr::CookHandler = FindHandlerByHash(HelperAddr::InnerDispatcher, CookingHash);
+        HelperAddr::ExpHandler  = FindExpeditionHandler(HelperAddr::InnerDispatcher, ExpeditionHash);
+        
+        std::cout << "   -> CookHandler resolved at: 0x" << std::hex << HelperAddr::CookHandler << std::dec << std::endl;
+        std::cout << "   -> ExpHandler resolved at: 0x" << std::hex << HelperAddr::ExpHandler << std::dec << std::endl;
+    } else {
+        std::cout << "[ERR] Fatal: All 3 patterns failed to find InnerDispatcher." << std::endl;
+    }
+
+    if (HelperAddr::CookHandler) {
+        g_CookReady = ResolveCookingPatches();
+        if (g_CookReady) {
+            std::cout << "[SCAN] Cooking memory patches resolved successfully." << std::endl;
+        } else {
+            std::cout << "[ERR] Cooking memory patches resolution failed." << std::endl;
+        }
+    }
+    
+    InitExpHandlerPrologueSafe();
+
+    if (HelperAddr::CookShowPage) {
+        if (MH_CreateHook((void*)HelperAddr::CookShowPage, (void*)hk_CookShowPage, (void**)&g_oCookShowPage) == MH_OK) {
+            std::cout << "[SCAN] CookShowPage Hook Ready." << std::endl;
+        } else {
+            std::cout << "[ERR] CookShowPage Hook Failed." << std::endl;
+        }
+    }
 
     DWORD oldProtect;
     VirtualProtect(p_CheckCanOpenMap.load(), 5, PAGE_EXECUTE_READWRITE, &oldProtect);
-
+    
     {
         HMODULE hMod = GetModuleHandle(NULL);
         if (hMod) {

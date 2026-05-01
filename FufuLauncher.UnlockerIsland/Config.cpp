@@ -157,8 +157,6 @@ namespace Config {
         g_Config.free_cam_speed_down = ReadInt("FreeCamSpeedDown", VK_CONTROL, file);
 
         g_Config.enable_free_cam_movement_fix = ReadInt("EnableFreeCamMovementFix", 1, file);
-        
-        g_Config.enable_gamepad_hot_switch = ReadInt("EnableGamepadHotSwitch", 1, file);
 
         g_Config.hide_grass = ReadInt("HideGrass", 0, file);
 
@@ -171,5 +169,11 @@ namespace Config {
         g_Config.ResinItem220007 = ReadInt("ResinItem220007", 1, file);
 
         g_Config.enable_clock_speedup = ReadInt("ClockSpeedup", 0, file);
+        
+        g_Config.enable_auto_cook = ReadInt("AutoCook", 0, file);
+        g_Config.enable_auto_expedition = ReadInt("AutoExpedition", 0, file);
+        
+        g_Config.auto_cook_key = ReadInt("AutoCookKey", VK_F10, file);
+        g_Config.auto_expedition_key = ReadInt("AutoExpeditionKey", VK_F9, file);
     }
 }

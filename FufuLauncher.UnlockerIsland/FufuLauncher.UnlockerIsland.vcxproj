@@ -143,9 +143,7 @@
   <ItemGroup>
     <ClInclude Include="Config.h" />
     <ClInclude Include="EncryptedData.h" />
-    <ClInclude Include="GamepadHotSwitch.h" />
     <ClInclude Include="Hooks.h" />
-    <ClInclude Include="HookWndProc.h" />
     <ClInclude Include="il2cpp\Il2CppArray.h" />
     <ClInclude Include="il2cpp\Il2CppList.h" />
     <ClInclude Include="il2cpp\Il2CppObject.h" />
@@ -157,9 +155,7 @@
   <ItemGroup>
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="GamepadHotSwitch.cpp" />
     <ClCompile Include="Hooks.cpp" />
-    <ClCompile Include="HookWndProc.cpp" />
     <ClCompile Include="Scanner.cpp" />
   </ItemGroup>
   <ItemGroup>
