@@ -360,8 +360,15 @@ void MainWorker(HMODULE hMod) {
     while (true) {
         auto& cfg = Config::Get();
         
+        HWND hForeground = GetForegroundWindow();
+        DWORD foregroundProcessId = 0;
+        if (hForeground) {
+            GetWindowThreadProcessId(hForeground, &foregroundProcessId);
+        }
+        bool isFocused = (foregroundProcessId == GetCurrentProcessId());
+
         static bool net_was_pressed = false;
-        bool net_is_pressed = (GetAsyncKeyState(cfg.network_toggle_key) & 0x8000);
+        bool net_is_pressed = (isFocused && (GetAsyncKeyState(cfg.network_toggle_key) & 0x8000));
 
         if (cfg.enable_network_toggle && net_is_pressed && !net_was_pressed) {
             cfg.is_currently_blocking = !cfg.is_currently_blocking;
@@ -376,17 +383,18 @@ void MainWorker(HMODULE hMod) {
         }
         net_was_pressed = net_is_pressed;
         
-        if (GetAsyncKeyState(cfg.toggle_key) & 0x8000) {
+        if (isFocused && (GetAsyncKeyState(cfg.toggle_key) & 0x8000)) {
             Config::Load();
             Hooks::TriggerReloadPopup();
             Sleep(500);
         }
         
-        if (cfg.craft_key != 0 && (GetAsyncKeyState(cfg.craft_key) & 0x8000)) {
+        if (isFocused && cfg.craft_key != 0 && (GetAsyncKeyState(cfg.craft_key) & 0x8000)) {
             Hooks::RequestOpenCraft();
             Sleep(500);
         }
         FILETIME currentWriteTime = GetFileLastWriteTime(configPath);
+        
         if (CompareFileTime(&lastConfigWriteTime, &currentWriteTime) != 0) {
             
             Sleep(100); 

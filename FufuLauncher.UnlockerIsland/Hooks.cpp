@@ -932,10 +932,17 @@ void UpdateFreeCamPhysics() {
     auto& cfg = Config::Get();
     ULONGLONG currentTick = GetTickCount64();
     
+    HWND hForeground = GetForegroundWindow();
+    DWORD foregroundProcessId = 0;
+    if (hForeground) {
+        GetWindowThreadProcessId(hForeground, &foregroundProcessId);
+    }
+    bool isFocused = (foregroundProcessId == GetCurrentProcessId());
+    
     static ULONGLONG f6PressStart = 0;
     static bool f6Handled = false;
     
-    if (GetAsyncKeyState(VK_F6) & 0x8000) {
+    if (isFocused && (GetAsyncKeyState(VK_F6) & 0x8000)) {
         if (f6PressStart == 0) {
             f6PressStart = currentTick;
             f6Handled = false;
@@ -981,8 +988,8 @@ void UpdateFreeCamPhysics() {
         
         static ULONGLONG lastSwitchTick = 0;
         if (currentTick - lastSwitchTick > 200) {
-            bool pressPrev = GetAsyncKeyState(VK_DIVIDE) & 0x8000;
-            bool pressNext = GetAsyncKeyState(VK_MULTIPLY) & 0x8000;
+            bool pressPrev = isFocused && (GetAsyncKeyState(VK_DIVIDE) & 0x8000);
+            bool pressNext = isFocused && (GetAsyncKeyState(VK_MULTIPLY) & 0x8000);
 
             if (pressPrev || pressNext) {
                 lastSwitchTick = currentTick;
@@ -1023,14 +1030,14 @@ void UpdateFreeCamPhysics() {
     }
     
     static bool lastToggleKey = false;
-    bool currToggleKey = GetAsyncKeyState(cfg.free_cam_key) & 0x8000;
+    bool currToggleKey = isFocused && (GetAsyncKeyState(cfg.free_cam_key) & 0x8000);
     if (currToggleKey && !lastToggleKey) {
         FreeCamState::isActive = !FreeCamState::isActive;
         FreeCamState::velX = FreeCamState::velY = FreeCamState::velZ = 0.0f;
     }
     lastToggleKey = currToggleKey;
     
-    if (GetAsyncKeyState(cfg.free_cam_reset_key) & 0x8000) {
+    if (isFocused && (GetAsyncKeyState(cfg.free_cam_reset_key) & 0x8000)) {
         FreeCamState::mainCameraTransform = nullptr;
     }
 
@@ -1045,20 +1052,23 @@ if (Config::Get().enable_free_cam_movement_fix) {
     }
     
     float currentPower = FC_BASE_SPEED;
-    if (GetAsyncKeyState(cfg.free_cam_speed_up) & 0x8000)   currentPower *= FC_SHIFT_MULTIPLIER;
-    if (GetAsyncKeyState(cfg.free_cam_speed_down) & 0x8000) currentPower *= FC_CTRL_MULTIPLIER;
+    if (isFocused) {
+        if (GetAsyncKeyState(cfg.free_cam_speed_up) & 0x8000)   currentPower *= FC_SHIFT_MULTIPLIER;
+        if (GetAsyncKeyState(cfg.free_cam_speed_down) & 0x8000) currentPower *= FC_CTRL_MULTIPLIER;
+    }
     
     float inputForward = 0.0f;
     float inputRight = 0.0f;
     float inputUp = 0.0f;
-
-    if (GetAsyncKeyState(cfg.free_cam_forward) & 0x8000)   inputForward += 1.0f;
-    if (GetAsyncKeyState(cfg.free_cam_backward) & 0x8000)  inputForward -= 1.0f;
-    if (GetAsyncKeyState(cfg.free_cam_left) & 0x8000)      inputRight -= 1.0f;
-    if (GetAsyncKeyState(cfg.free_cam_right) & 0x8000)     inputRight += 1.0f;
-    if (GetAsyncKeyState(cfg.free_cam_up) & 0x8000)        inputUp += 1.0f;
-    if (GetAsyncKeyState(cfg.free_cam_down) & 0x8000)      inputUp -= 1.0f;
-
+    
+    if (isFocused) {
+        if (GetAsyncKeyState(cfg.free_cam_forward) & 0x8000)   inputForward += 1.0f;
+        if (GetAsyncKeyState(cfg.free_cam_backward) & 0x8000)  inputForward -= 1.0f;
+        if (GetAsyncKeyState(cfg.free_cam_left) & 0x8000)      inputRight -= 1.0f;
+        if (GetAsyncKeyState(cfg.free_cam_right) & 0x8000)     inputRight += 1.0f;
+        if (GetAsyncKeyState(cfg.free_cam_up) & 0x8000)        inputUp += 1.0f;
+        if (GetAsyncKeyState(cfg.free_cam_down) & 0x8000)      inputUp -= 1.0f;
+    }
     float targetVelX = 0.0f, targetVelY = 0.0f, targetVelZ = 0.0f;
     
     if (gotMatrix) {
@@ -1872,15 +1882,16 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
 
     DWORD now = GetTickCount();
     bool canOpenUI = CheckCanUseShortcut();
-
-    if (cfg.enable_auto_cook && (GetAsyncKeyState(cfg.auto_cook_key) & 0x8000) && now - g_LastCookTime > 300) { 
+    bool isFocused = CheckWindowFocused(GetForegroundWindow());
+    
+    if (isFocused && cfg.enable_auto_cook && (GetAsyncKeyState(cfg.auto_cook_key) & 0x8000) && now - g_LastCookTime > 300) { 
         if (canOpenUI) {
             g_TrigCook = true; 
             g_LastCookTime = now; 
             std::cout << "[Hotkey] Auto Cook function triggered." << std::endl;
         }
     }
-    if (cfg.enable_auto_expedition && (GetAsyncKeyState(cfg.auto_expedition_key) & 0x8000) && now - g_LastExpTime > 300) { 
+    if (isFocused && cfg.enable_auto_expedition && (GetAsyncKeyState(cfg.auto_expedition_key) & 0x8000) && now - g_LastExpTime > 300) { 
         if (canOpenUI) {
             g_TrigExp = true; 
             g_LastExpTime = now; 
