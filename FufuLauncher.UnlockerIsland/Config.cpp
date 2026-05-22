@@ -1,4 +1,4 @@
-﻿#include "Config.h"
+#include "Config.h"
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -172,6 +172,8 @@ namespace Config {
         
         g_Config.enable_auto_cook = ReadInt("AutoCook", 0, file);
         g_Config.enable_auto_expedition = ReadInt("AutoExpedition", 0, file);
+        
+        g_Config.enable_gamepad_hot_switch = ReadInt("GamepadHotSwitch", 0, file);
         
         g_Config.auto_cook_key = ReadInt("AutoCookKey", VK_F10, file);
         g_Config.auto_expedition_key = ReadInt("AutoExpeditionKey", VK_F9, file);

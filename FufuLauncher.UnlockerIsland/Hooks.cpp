@@ -1,4 +1,4 @@
-﻿#ifndef WIN32_LEAN_AND_MEAN
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 
@@ -8,6 +8,7 @@
 #include "Config.h"
 #include "Utils.h"
 #include "MinHook/MinHook.h"
+#include "GamepadHotSwitch.h"
 #include <iostream>
 #include <atomic>
 #include <mutex>
@@ -1884,6 +1885,7 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
         UpdatePaimonV2();
         UpdateOpenMap();
         g_ResistInBeyd = CheckResistInBeyd(false);
+        GamepadHotSwitch::GetInstance().SetEnabled(cfg.enable_gamepad_hot_switch);
     }
 
     if (g_RequestCraft.load()) {
@@ -2367,6 +2369,9 @@ bool Hooks::Init() {
         std::cout << "[SCAN] MH_EnableHook Failed!" << '\n';
         return false;
     }
+    
+    InitializeWndProcHooks();
+    
     return true;
 }
 
