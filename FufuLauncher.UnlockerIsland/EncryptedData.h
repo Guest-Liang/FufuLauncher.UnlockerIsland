@@ -24,7 +24,7 @@ namespace EncryptedPatterns {
     // 8. DamageText
     inline constexpr auto DamageText = XorString::encrypt("41 57 41 56 41 55 41 54 56 57 55 53 48 81 EC ? ? ? ? 44 0F 29 9C 24 ? ? ? ? 44 0F 29 94 24 ? ? ? ? 44 0F 29 8C 24 ? ? ? ? 44 0F 29 84 24 ? ? ? ? 0F 29 BC 24 ? ? ? ? 0F 29 B4 24 ? ? ? ? 44 89 CF 45 89 C4");
     // 9. EventCamera
-    inline constexpr auto EventCamera = XorString::encrypt("41 57 41 56 56 57 55 53 48 83 EC ? 48 89 D7 49 89 CE 80 3D ? ? ? ? 00 0F 85 ? ? ? ? 80 3D ? ? ? ? 00");
+    inline constexpr auto EventCamera = XorString::encrypt("41 57 41 56 56 57 55 53 48 83 EC ?? 48 89 D7 48 89 CE 80 3D ?? ?? ?? ?? 00 0F 85 ?? ?? ?? ?? 48 89 F1 E8 ?? ?? ?? ?? 84 C0 0F 85");
     // 10. FindString
     inline constexpr auto FindString = XorString::encrypt("56 48 83 ec 20 48 89 ce e8 ? ? ? ? 48 89 f1 89 c2 48 83 c4 20 5e e9 ? ? ? ? cc cc cc cc");
     // 11. CraftPartner
@@ -103,40 +103,40 @@ namespace EncryptedPatterns {
 
         inline constexpr auto TouchInputOffset = XorString::encrypt("d7accd0");
 
-        inline constexpr auto EventCameraOffset = XorString::encrypt("E5BC000");
+        inline constexpr auto EventCameraOffset = XorString::encrypt("0");
         
         // inline constexpr auto KeyboardMouseInputOffset = XorString::encrypt("0"); 
     }
     
     namespace OS {
         // UnityEngine.GameObject.get_active
-        inline constexpr auto GetActiveOffset = XorString::encrypt("0");
+        inline constexpr auto GetActiveOffset = XorString::encrypt("173a1ed0");
         // MoleMole.ActorManager.ctor
-        inline constexpr auto ActorManagerCtorOffset = XorString::encrypt("0");
+        inline constexpr auto ActorManagerCtorOffset = XorString::encrypt("e3cc5e0");
         // MoleMole.ActorManager.GetGlobalActor
-        inline constexpr auto GetGlobalActorOffset = XorString::encrypt("0");
+        inline constexpr auto GetGlobalActorOffset = XorString::encrypt("e3dae10");
         // MoleMole.BaseActor.AvatarPaimonAppear
-        inline constexpr auto AvatarPaimonAppearOffset = XorString::encrypt("0");
+        inline constexpr auto AvatarPaimonAppearOffset = XorString::encrypt("11a6d300");
         // UnityEngine.Camera.get_main
-        inline constexpr auto GetMainCameraOffset = XorString::encrypt("0");
+        inline constexpr auto GetMainCameraOffset = XorString::encrypt("173b2950");
         // UnityEngine.Component.get_transform
-        inline constexpr auto GetTransformOffset = XorString::encrypt("0");
+        inline constexpr auto GetTransformOffset = XorString::encrypt("173c3330");
         // UnityEngine.Transform.INTERNAL_set_position
-        inline constexpr auto SetPosOffset = XorString::encrypt("0");
+        inline constexpr auto SetPosOffset = XorString::encrypt("173bc990");
         // UnityEngine.Camera.get_cameraToWorldMatrix
-        inline constexpr auto CameraGetC2WOffset = XorString::encrypt("0");
+        inline constexpr auto CameraGetC2WOffset = XorString::encrypt("173b1e40");
         // UnityEngine.Component.GetComponent(System.String type)
-        inline constexpr auto GetComponent = XorString::encrypt("0");
+        inline constexpr auto GetComponent = XorString::encrypt("173c33b0");
         // UnityEngine.UI.Text.get_text
-        inline constexpr auto GetText = XorString::encrypt("0");
+        inline constexpr auto GetText = XorString::encrypt("174a1b70");
 
-        inline constexpr auto ClockPageOkOffset = XorString::encrypt("0");
+        inline constexpr auto ClockPageOkOffset = XorString::encrypt("79b34f0");
 
-        inline constexpr auto ClockPageCloseOffset = XorString::encrypt("0");
+        inline constexpr auto ClockPageCloseOffset = XorString::encrypt("11cf02d0");
 
-        inline constexpr auto ResinListOffset = XorString::encrypt("220");
+        inline constexpr auto ResinListOffset = XorString::encrypt("230");
 
-        inline constexpr auto TouchInputOffset = XorString::encrypt("0");
+        inline constexpr auto TouchInputOffset = XorString::encrypt("d7a7490");
 
         inline constexpr auto EventCameraOffset = XorString::encrypt("0");
         
