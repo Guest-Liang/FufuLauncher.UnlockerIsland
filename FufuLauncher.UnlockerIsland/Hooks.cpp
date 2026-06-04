@@ -1808,7 +1808,7 @@ void UpdatePaimonV2() {
     auto FindGameObject = (tFindGameObject)p_FindGameObject.load();
     auto AvatarPaimonAppear = (tAvatarPaimonAppear)p_AvatarPaimonAppear.load();
     
-    if (!GetGlobalActor || !GetActive || !FindString || !FindGameObject || !AvatarPaimonAppear) {
+if (!GetGlobalActor || !GetActive || !FindString || !FindGameObject || !AvatarPaimonAppear) {
         if (canLog) {
             std::cout << "[PaimonV2_Blocker] Required function pointers are missing!" << std::endl
                       << " -> GetGlobalActor: " << GetGlobalActor << std::endl
@@ -1822,7 +1822,9 @@ void UpdatePaimonV2() {
     }
     
     static ULONGLONG lastCheckTick = 0;
-    if (currentTick - lastCheckTick < 2000) { 
+    static ULONGLONG checkInterval = 2000;
+    
+    if (currentTick - lastCheckTick < checkInterval) {
         return;
     }
     lastCheckTick = currentTick;
@@ -1859,9 +1861,12 @@ void UpdatePaimonV2() {
                   << " | Beyd: " << isBeydActive << std::endl;
 
         if (isPaimonActive || isDiveActive || isBeydActive) {
+            checkInterval = 5000;
             std::cout << "[PaimonV2_Log] A Paimon is currently active. Aborting awake." << std::endl;
             return;
         }
+        
+        checkInterval = 2000;
         
         void* globalActor = GetGlobalActor(g_ActorManagerInstance);
         std::cout << "[PaimonV2_Log] GlobalActor ptr: " << globalActor << std::endl;
@@ -2707,22 +2712,19 @@ bool Hooks::Init() {
             
             uintptr_t base = (uintptr_t)GetModuleHandle(NULL);
             
-            // 1. 解析 SetText
             uintptr_t setTextOffsetVal = 0;
             std::stringstream ssSetText; ssSetText << std::hex << Offsets::SetTextOffset; ssSetText >> setTextOffsetVal;
             if (setTextOffsetVal > 0) {
                 void* targetSetText = (void*)(base + setTextOffsetVal);
                 MH_CreateHook(targetSetText, (void*)CustomUIDFeature::hk_SetText, (void**)&CustomUIDFeature::g_oSetText);
             }
-
-            // 2. 解析 SetColor (仅赋值函数指针，不需要 Hook)
+            
             uintptr_t setColorOffsetVal = 0;
             std::stringstream ssSetColor; ssSetColor << std::hex << Offsets::SetColorOffset; ssSetColor >> setColorOffsetVal;
             if (setColorOffsetVal > 0) {
                 CustomUIDFeature::g_oSetColor = (CustomUIDFeature::SetColor_t)(base + setColorOffsetVal);
             }
-
-            // 3. 解析 SetFontSize (仅赋值函数指针，不需要 Hook)
+            
             uintptr_t setFontSizeOffsetVal = 0;
             std::stringstream ssSetSize; ssSetSize << std::hex << Offsets::SetFontSizeOffset; ssSetSize >> setFontSizeOffsetVal;
             if (setFontSizeOffsetVal > 0) {
