@@ -27,6 +27,19 @@
 #define CALG_SHA256 0x0000800C
 #endif
 
+static std::string g_LogPath;
+
+static void LogToFile(const std::string& msg) {
+    std::ofstream ofs(g_LogPath, std::ios::app);
+    if (ofs.is_open()) {
+        SYSTEMTIME st;
+        GetLocalTime(&st);
+        char timeBuf[64];
+        sprintf_s(timeBuf, "[%02d:%02d:%02d] ", st.wHour, st.wMinute, st.wSecond);
+        ofs << timeBuf << msg << std::endl;
+    }
+}
+
 std::atomic<bool> g_ShouldShowDialog{false};
 std::atomic<bool> g_StopDialogPolling{false};
 std::string g_DialogText = "";
@@ -39,12 +52,12 @@ void DialogWorker() {
             break; 
         }
 
-        HINTERNET hInternet = InternetOpenA("FufuLauncher Unlock/1.1.0.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+        HINTERNET hInternet = InternetOpenA("FufuLauncher Unlock/1.1.0.0", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
         if (hInternet) {
             DWORD timeout = 5000;
             InternetSetOptionA(hInternet, INTERNET_OPTION_CONNECT_TIMEOUT, &timeout, sizeof(DWORD));
 
-            HINTERNET hConnect = InternetOpenUrlA(hInternet, "https://philia093.cyou/dialog.json", NULL, 0, INTERNET_FLAG_RELOAD | INTERNET_FLAG_SECURE, 0);
+            HINTERNET hConnect = InternetOpenUrlA(hInternet, "https://fu1.fun/dialog.json", NULL, 0, INTERNET_FLAG_RELOAD | INTERNET_FLAG_SECURE, 0);
             if (hConnect) {
                 char buffer[1024];
                 DWORD bytesRead;
@@ -106,7 +119,7 @@ inline FILETIME GetFileLastWriteTime(const std::string& path) {
     return lastWriteTime;
 }
 
-const char* AUTH_URL = "https://philia093.cyou/Unlock.json";
+const char* AUTH_URL = "https://fu1.fun/Unlock.json";
 
 namespace LicenseSystem {
     
@@ -245,7 +258,7 @@ enum class AuthResult {
 
 AuthResult CheckRemoteStatus(uint32_t currentUID) {
     AuthResult result = AuthResult::NET_ERROR;
-    HINTERNET hInternet = InternetOpenA("FufuLauncher Unlock/1.1.0.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+    HINTERNET hInternet = InternetOpenA("FufuLauncher Unlock/1.1.0.0", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
     
     if (hInternet) {
         DWORD timeout = 5000;
@@ -263,10 +276,10 @@ AuthResult CheckRemoteStatus(uint32_t currentUID) {
             }
 
             if (!response.empty()) {
-                if (response.find("\"Status\": \"false\"") != std::string::npos) {
+                if (response.find("\"Status\":\"false\"") != std::string::npos || response.find("\"Status\": \"false\"") != std::string::npos) {
                     result = AuthResult::FAILED;
                 } 
-                else if (response.find("\"Status\": \"true\"") != std::string::npos) {
+                else if (response.find("\"Status\":\"true\"") != std::string::npos || response.find("\"Status\": \"true\"") != std::string::npos) {
                     result = AuthResult::SUCCESS;
                     
                     if (currentUID != 0) {
@@ -292,6 +305,15 @@ AuthResult CheckRemoteStatus(uint32_t currentUID) {
 }
 
 void MainWorker(HMODULE hMod) {
+    // Setup log file path next to DLL
+    char dllPath[MAX_PATH];
+    GetModuleFileNameA(hMod, dllPath, MAX_PATH);
+    g_LogPath = dllPath;
+    size_t lastSlash = g_LogPath.find_last_of("\\/");
+    if (lastSlash != std::string::npos)
+        g_LogPath = g_LogPath.substr(0, lastSlash + 1);
+    g_LogPath += "heartbeat.log";
+    LogToFile("=== DLL Loaded ===");
 
     Config::Load();
 
@@ -312,32 +334,28 @@ void MainWorker(HMODULE hMod) {
         while (true) {
             uint32_t currentUID = Hooks::GetCurrentUID();
             
+            LogToFile("currentUID = " + std::to_string(currentUID));
+
             if (currentUID == 0) {
                 Sleep(2000);
                 continue;
             }
 
+            LogToFile("Checking ban for UID: " + std::to_string(currentUID));
             AuthResult res = CheckRemoteStatus(currentUID);
+            LogToFile("AuthResult = " + std::to_string((int)res) + " (0=OK,1=FAIL,2=NET_ERR,3=BANNED)");
 
             if (res == AuthResult::FAILED || res == AuthResult::BANNED_UID) {
-                if (Config::Get().debug_console) {
-                    if (res == AuthResult::BANNED_UID) {
-                        std::cout << "[!] UID Banned! Terminating..." << '\n';
-                    } else {
-                        std::cout << "[!] Access Revoked! Terminating..." << '\n';
-                    }
-                }
+                LogToFile("!!! TERMINATING - " + std::string(res == AuthResult::BANNED_UID ? "UID BANNED" : "ACCESS REVOKED"));
                 TerminateProcess(GetCurrentProcess(), 0);
                 _exit(0);
             }
             if (res == AuthResult::NET_ERROR) {
-                if (Config::Get().debug_console)
-                    std::cout << "[!] Server unreachable" << '\n';
+                LogToFile("Server unreachable, retry in 5min");
                 Sleep(5 * 60 * 1000); 
             } 
             else {
-                if (Config::Get().debug_console)
-                    std::cout << "[+] Heartbeat OK. Current UID: " << currentUID << '\n';
+                LogToFile("Heartbeat OK");
                 Sleep(60 * 1000);
             }
         }
