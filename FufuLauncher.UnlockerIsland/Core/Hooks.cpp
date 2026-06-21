@@ -172,29 +172,6 @@ void UpdateRealUID() {
     });
 }
 
-void DoCraftLogic(bool isShortcut) {
-    auto findStr = (tFindString)p_FindString.load();
-    auto partner = (tCraftPartner)p_CraftPartner.load();
-
-    if (IsValid(findStr) && IsValid(partner)) {
-        if (isShortcut) {
-            if (CheckResistInBeyd()) return;
-
-            auto checkEnter = (tCheckCanEnter)p_CheckCanEnter.load();
-            if (IsValid(checkEnter)) {
-                bool canEnter = false;
-                SafeInvoke([&] { canEnter = checkEnter(); });
-                if (!canEnter) return;
-            }
-        }
-
-        SafeInvoke([&] {
-            Il2CppString* str = findStr(GameStrings::SynthesisPage);
-            if (str) partner(str, nullptr, nullptr, nullptr, nullptr);
-        });
-    }
-}
-
 int32_t WINAPI hk_GetFrameCount() {
     UpdateTitleWatermark();
 
@@ -254,6 +231,20 @@ static bool CheckCanUseShortcut() {
         return canEnter;
     }
     return true;
+}
+
+void DoCraftLogic(bool isShortcut) {
+    auto findStr = (tFindString)p_FindString.load();
+    auto partner = (tCraftPartner)p_CraftPartner.load();
+
+    if (IsValid(findStr) && IsValid(partner)) {
+        if (isShortcut && !CheckCanUseShortcut()) return;
+
+        SafeInvoke([&] {
+            Il2CppString* str = findStr(GameStrings::SynthesisPage);
+            if (str) partner(str, nullptr, nullptr, nullptr, nullptr);
+        });
+    }
 }
 
 static void UpdateFreeCamPhysics_Safe() {
