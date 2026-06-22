@@ -172,29 +172,6 @@ void UpdateRealUID() {
     });
 }
 
-void DoCraftLogic(bool isShortcut) {
-    auto findStr = (tFindString)p_FindString.load();
-    auto partner = (tCraftPartner)p_CraftPartner.load();
-
-    if (IsValid(findStr) && IsValid(partner)) {
-        if (isShortcut) {
-            if (CheckResistInBeyd()) return;
-
-            auto checkEnter = (tCheckCanEnter)p_CheckCanEnter.load();
-            if (IsValid(checkEnter)) {
-                bool canEnter = false;
-                SafeInvoke([&] { canEnter = checkEnter(); });
-                if (!canEnter) return;
-            }
-        }
-
-        SafeInvoke([&] {
-            Il2CppString* str = findStr(GameStrings::SynthesisPage);
-            if (str) partner(str, nullptr, nullptr, nullptr, nullptr);
-        });
-    }
-}
-
 int32_t WINAPI hk_GetFrameCount() {
     UpdateTitleWatermark();
 
@@ -286,17 +263,26 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
         g_ResistInBeyd = CheckResistInBeyd(false);
     }
 
-    if (g_RequestCraft.load()) {
-        g_RequestCraft.store(false);
-        if (cfg.enable_redirect_craft_override) {
-            std::cout << "[Hotkey] Craft function triggered." << std::endl;
-            DoCraftLogic(true);
-        }
-    }
-
     DWORD now = GetTickCount();
     bool canOpenUI = CheckCanUseShortcut();
     bool isFocused = CheckWindowFocused(GetForegroundWindow());
+
+    if (g_RequestCraft.load()) {
+        g_RequestCraft.store(false);
+        if (cfg.enable_redirect_craft_override && canOpenUI) {
+            std::cout << "[Hotkey] Craft function triggered." << std::endl;
+
+            auto findStr = (tFindString)p_FindString.load();
+            auto partner = (tCraftPartner)p_CraftPartner.load();
+
+            if (IsValid(findStr) && IsValid(partner)) {
+                SafeInvoke([&] {
+                    Il2CppString* str = findStr(GameStrings::SynthesisPage);
+                    if (str) partner(str, nullptr, nullptr, nullptr, nullptr);
+                    });
+            }
+        }
+    }
 
     if (isFocused && cfg.enable_auto_cook && (GetAsyncKeyState(cfg.auto_cook_key) & 0x8000) && now - g_LastCookTime > 300) {
         if (canOpenUI) {
