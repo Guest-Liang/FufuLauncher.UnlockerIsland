@@ -210,5 +210,7 @@ namespace Config {
         g_Config.enable_rainbow_damage = ReadInt("EnableRainbowDamage", 0, file);
         g_Config.rainbow_damage_mode = ReadInt("RainbowDamageMode", 0, file);
         g_Config.rainbow_fixed_color_idx = ReadInt("RainbowFixedColorIdx", 0, file);
+
+        g_Config.enable_gamepad_hot_switch = ReadInt("EnableGamepadHotSwitch", 0, file);
     }
 }

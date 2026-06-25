@@ -115,6 +115,8 @@ struct ModConfig {
     bool enable_rainbow_damage = false;
     int rainbow_damage_mode = 0; // 0: 动态彩虹循环, 1: 使用固定颜色
     int rainbow_fixed_color_idx = 0; // 颜色调色板索引 (0 - 7)
+
+    bool enable_gamepad_hot_switch = false;
 };
 
 namespace Config {

@@ -7,6 +7,7 @@
 #include "../Config/Config.h"
 #include "Utils.h"
 #include "../MinHook/MinHook.h"
+#include "../GamepadHotSwitch/GamepadHotSwitch.h"
 #include "SharedState.h"
 #include "../Patterns/Patterns.h"
 #include "../FreeCam/FreeCam.h"
@@ -254,6 +255,7 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
 
     if (frameCounter >= 100) {
         frameCounter = 0;
+        InitializeWndProcHooks();
         UpdateRealUID();
         UpdateHideUID();
         UpdateHideMainUI();
@@ -261,7 +263,9 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
         UpdatePaimonV2();
         UpdateOpenMap();
         g_ResistInBeyd = CheckResistInBeyd(false);
+        GamepadHotSwitch::GetInstance().SetEnabled(cfg.enable_gamepad_hot_switch);
     }
+
 
     DWORD now = GetTickCount();
     bool canOpenUI = CheckCanUseShortcut();
