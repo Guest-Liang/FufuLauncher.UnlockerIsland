@@ -212,5 +212,8 @@ namespace Config {
         g_Config.rainbow_fixed_color_idx = ReadInt("RainbowFixedColorIdx", 0, file);
 
         g_Config.enable_gamepad_hot_switch = ReadInt("EnableGamepadHotSwitch", 0, file);
+
+        g_Config.enable_render_scale = ReadInt("EnableRenderScale", 0, file);
+        g_Config.render_scale_value = ReadFloat("RenderScaleValue", 0.01f, file);
     }
 }

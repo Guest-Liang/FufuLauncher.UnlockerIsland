@@ -18,6 +18,7 @@
 #include "../HideUI/HideUI.h"
 #include "../Network/Network.h"
 #include "../Visual/Visual.h"
+#include "../RenderScale/RenderScale.h"
 #include <iostream>
 #include <atomic>
 #include <mutex>
@@ -630,6 +631,8 @@ bool Hooks::Init() {
     if (MH_CreateHookApi(L"ws2_32.dll", "sendto", (void*)hk_sendto, (void**)&o_sendto) == MH_OK) {
         std::cout << "[SCAN] Hook sendto Ready." << '\n';
     }
+
+    RenderScaleFeature::Init();
 
     if (MH_EnableHook(MH_ALL_HOOKS) != MH_OK) {
         std::cout << "[SCAN] MH_EnableHook Failed!" << '\n';

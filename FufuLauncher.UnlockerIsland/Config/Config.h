@@ -117,6 +117,9 @@ struct ModConfig {
     int rainbow_fixed_color_idx = 0; // 颜色调色板索引 (0 - 7)
 
     bool enable_gamepad_hot_switch = false;
+
+    bool enable_render_scale = false;
+    float render_scale_value = 0.01f;
 };
 
 namespace Config {

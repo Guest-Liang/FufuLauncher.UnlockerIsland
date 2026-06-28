@@ -33,7 +33,8 @@ namespace Patterns {
     inline constexpr const char* StringNew = "56 48 83 EC 20 48 85 C9 74 ? 48 89 CE E8 ? ? ? ? 48 89 F1 89 C2";
     inline constexpr const char* ShowDialog = "41 57 41 56 56 57 55 53 48 83 EC 28 4D 89 CF 4C 89 C7 48 89 D5 48 89 CB";
     inline constexpr const char* SetUID = "56 57 48 83 EC 28 89 D7 48 89 CE 80 3D ?? ?? ?? ?? 00 0F 84 ?? ?? ?? ?? 80 3D ?? ?? ?? ?? 00 0F 85 ?? ?? ?? ?? 89 BE ?? ?? ?? ?? 48 8B 0D ?? ?? ?? ?? 80 B9 ?? ?? ?? ?? 00 0F 84";
-
+    inline constexpr const char* BuildCmdBuffers = "41 57 41 56 41 55 41 54 56 57 55 53 48 81 EC 48 02 00 00 48 89 CE 0F 57 C0 0F 29 84 24 50 01 00 00 0F 29 84 24 40 01 00 00 0F 29 84 24 30 01 00";
+    
     namespace Helper {
         inline constexpr const char* InnerDispatcher_1 = "41 57 41 56 41 55 41 54 56 57 55 53 48 81 EC E8 00 00 00 4C 89 CB 4C 89 C7 48 89 D5 48 89 CA";
         inline constexpr const char* InnerDispatcher_2 = "41 57 41 56 41 55 41 54 56 57 55 53 48 81 EC E8 00 00 00 4C 89 CB 4C 89 C7";

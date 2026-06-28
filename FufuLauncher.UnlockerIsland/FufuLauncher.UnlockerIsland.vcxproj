@@ -154,6 +154,7 @@
         <ClInclude Include="Paimon\Paimon.h" />
         <ClInclude Include="HideUI\HideUI.h" />
         <ClInclude Include="Network\Network.h" />
+        <ClInclude Include="RenderScale\RenderScale.h" />
         <ClInclude Include="Visual\Visual.h" />
         <ClInclude Include="il2cpp\Il2CppArray.h" />
         <ClInclude Include="il2cpp\Il2CppList.h" />
@@ -167,6 +168,7 @@
         <ClCompile Include="Core\dllmain.cpp" />
         <ClCompile Include="Core\Hooks.cpp" />
         <ClCompile Include="GamepadHotSwitch\GamepadHotSwitch.cpp" />
+        <ClCompile Include="RenderScale\RenderScale.cpp" />
         <ClCompile Include="Scanner\Scanner.cpp" />
         <ClCompile Include="Core\SharedState.cpp" />
         <ClCompile Include="Patterns\Patterns.cpp" />
