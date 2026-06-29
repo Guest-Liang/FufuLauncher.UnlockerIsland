@@ -19,6 +19,7 @@
 #include "../Network/Network.h"
 #include "../Visual/Visual.h"
 #include "../RenderScale/RenderScale.h"
+#include "../CameraTweaks/CameraTweaks.h"
 #include <iostream>
 #include <atomic>
 #include <mutex>
@@ -633,6 +634,8 @@ bool Hooks::Init() {
     }
 
     RenderScaleFeature::Init();
+
+    CameraTweaks::Init();
 
     if (MH_EnableHook(MH_ALL_HOOKS) != MH_OK) {
         std::cout << "[SCAN] MH_EnableHook Failed!" << '\n';

@@ -142,6 +142,7 @@
         </Link>
     </ItemDefinitionGroup>
     <ItemGroup>
+        <ClInclude Include="CameraTweaks\CameraTweaks.h" />
         <ClInclude Include="Config\Config.h" />
         <ClInclude Include="Core\Hooks.h" />
         <ClInclude Include="Core\SharedState.h" />
@@ -164,6 +165,7 @@
         <ClInclude Include="Core\Utils.h" />
     </ItemGroup>
     <ItemGroup>
+        <ClCompile Include="CameraTweaks\CameraTweaks.cpp" />
         <ClCompile Include="Config\Config.cpp" />
         <ClCompile Include="Core\dllmain.cpp" />
         <ClCompile Include="Core\Hooks.cpp" />

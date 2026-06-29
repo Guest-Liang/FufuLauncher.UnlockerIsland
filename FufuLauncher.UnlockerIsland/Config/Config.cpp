@@ -215,5 +215,8 @@ namespace Config {
 
         g_Config.enable_render_scale = ReadInt("EnableRenderScale", 0, file);
         g_Config.render_scale_value = ReadFloat("RenderScaleValue", 0.01f, file);
+
+        g_Config.disable_camera_smooth = ReadInt("DisableCameraSmooth", 0, file);
+        g_Config.disable_camera_blend = ReadInt("DisableCameraBlend", 0, file);
     }
 }

@@ -113,13 +113,16 @@ struct ModConfig {
     unsigned int gradient_color_4 = 0x8BDEDA;
 
     bool enable_rainbow_damage = false;
-    int rainbow_damage_mode = 0; // 0: 动态彩虹循环, 1: 使用固定颜色
-    int rainbow_fixed_color_idx = 0; // 颜色调色板索引 (0 - 7)
+    int rainbow_damage_mode = 0;
+    int rainbow_fixed_color_idx = 0;
 
     bool enable_gamepad_hot_switch = false;
 
     bool enable_render_scale = false;
     float render_scale_value = 0.01f;
+
+    bool disable_camera_smooth = false;
+    bool disable_camera_blend = false;
 };
 
 namespace Config {
