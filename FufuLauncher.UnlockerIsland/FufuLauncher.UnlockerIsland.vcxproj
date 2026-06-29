@@ -156,6 +156,7 @@
         <ClInclude Include="HideUI\HideUI.h" />
         <ClInclude Include="Network\Network.h" />
         <ClInclude Include="RenderScale\RenderScale.h" />
+        <ClInclude Include="UnderwaterMask\UnderwaterMask.h" />
         <ClInclude Include="Visual\Visual.h" />
         <ClInclude Include="il2cpp\Il2CppArray.h" />
         <ClInclude Include="il2cpp\Il2CppList.h" />
@@ -181,6 +182,7 @@
         <ClCompile Include="Paimon\Paimon.cpp" />
         <ClCompile Include="HideUI\HideUI.cpp" />
         <ClCompile Include="Network\Network.cpp" />
+        <ClCompile Include="UnderwaterMask\UnderwaterMask.cpp" />
         <ClCompile Include="Visual\Visual.cpp" />
     </ItemGroup>
     <ItemGroup>

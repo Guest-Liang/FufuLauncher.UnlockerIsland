@@ -20,6 +20,7 @@
 #include "../Visual/Visual.h"
 #include "../RenderScale/RenderScale.h"
 #include "../CameraTweaks/CameraTweaks.h"
+#include "../UnderwaterMask/UnderwaterMask.h"
 #include <iostream>
 #include <atomic>
 #include <mutex>
@@ -636,6 +637,8 @@ bool Hooks::Init() {
     RenderScaleFeature::Init();
 
     CameraTweaks::Init();
+
+    UnderwaterMask::Init();
 
     if (MH_EnableHook(MH_ALL_HOOKS) != MH_OK) {
         std::cout << "[SCAN] MH_EnableHook Failed!" << '\n';

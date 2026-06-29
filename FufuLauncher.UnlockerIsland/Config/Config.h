@@ -123,6 +123,8 @@ struct ModConfig {
 
     bool disable_camera_smooth = false;
     bool disable_camera_blend = false;
+
+    bool disable_underwater_mask = false;
 };
 
 namespace Config {

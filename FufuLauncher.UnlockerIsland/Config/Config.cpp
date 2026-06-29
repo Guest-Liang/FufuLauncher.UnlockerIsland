@@ -218,5 +218,7 @@ namespace Config {
 
         g_Config.disable_camera_smooth = ReadInt("DisableCameraSmooth", 0, file);
         g_Config.disable_camera_blend = ReadInt("DisableCameraBlend", 0, file);
+
+        g_Config.disable_underwater_mask = ReadInt("DisableUnderwaterMask", 0, file);
     }
 }
