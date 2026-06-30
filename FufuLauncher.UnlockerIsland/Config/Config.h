@@ -116,8 +116,6 @@ struct ModConfig {
     int rainbow_damage_mode = 0;
     int rainbow_fixed_color_idx = 0;
 
-    bool enable_gamepad_hot_switch = false;
-
     bool enable_render_scale = false;
     float render_scale_value = 0.01f;
 
