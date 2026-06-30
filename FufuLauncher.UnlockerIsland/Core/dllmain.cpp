@@ -30,6 +30,14 @@
 static std::string g_LogPath;
 
 static void LogToFile(const std::string& msg) {
+    std::error_code ec;
+    if (std::filesystem::exists(g_LogPath, ec)) {
+        if (std::filesystem::file_size(g_LogPath, ec) > 1048576) {
+            std::ofstream truncFile(g_LogPath, std::ios::trunc);
+            truncFile.close();
+        }
+    }
+
     std::ofstream ofs(g_LogPath, std::ios::app);
     if (ofs.is_open()) {
         SYSTEMTIME st;
@@ -305,7 +313,6 @@ AuthResult CheckRemoteStatus(uint32_t currentUID) {
 }
 
 void MainWorker(HMODULE hMod) {
-    // Setup log file path next to DLL
     char dllPath[MAX_PATH];
     GetModuleFileNameA(hMod, dllPath, MAX_PATH);
     g_LogPath = dllPath;
