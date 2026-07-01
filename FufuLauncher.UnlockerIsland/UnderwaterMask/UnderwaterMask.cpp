@@ -1,69 +1,161 @@
-﻿#include "UnderwaterMask.h"
+#include "UnderwaterMask.h"
+
 #include "../Config/Config.h"
-#include "../Scanner/Scanner.h"
-#include "../Patterns/Patterns.h"
+#include "../Core/Utils.h"
 #include "../MinHook/MinHook.h"
+#include "../Patterns/Patterns.h"
+#include "../Scanner/Scanner.h"
+
 #include <cstdint>
 #include <iostream>
 
 namespace UnderwaterMask {
+    namespace {
+        using MaskFunction = std::int64_t(__fastcall*)(void*, double);
+        using ClearFunction = void(__fastcall*)(void*);
 
-    typedef void(__fastcall* fn_LELJFPLMCFH)(void* thisPtr, void* unused);
-    typedef void(__fastcall* fn_GLPLONFPPDM)(void* thisPtr, void* unused);
+        constexpr uintptr_t ClearSearchWindow = 0x8000;
 
-    static fn_LELJFPLMCFH g_origLELJFPLMCFH = nullptr;
-    static fn_GLPLONFPPDM g_fnGLPLONFPDM = nullptr;
+        MaskFunction g_origPre = nullptr;
+        MaskFunction g_origMain = nullptr;
+        MaskFunction g_origPost = nullptr;
+        ClearFunction g_clearMask = nullptr;
 
-    static void __fastcall Hooked_LELJFPLMCFH(void* thisPtr, void* unused) {
-        if (g_fnGLPLONFPDM) {
-            g_fnGLPLONFPDM(thisPtr, nullptr);
+        bool IsDisabled() {
+            return Config::Get().disable_underwater_mask;
         }
-    }
 
-    static uintptr_t FindPatternLocal(uintptr_t base, size_t size, const uint8_t* pattern, const char* mask) {
-        size_t patternLen = strlen(mask);
-        for (size_t i = 0; i <= size - patternLen; ++i) {
-            bool found = true;
-            for (size_t j = 0; j < patternLen; ++j) {
-                if (mask[j] == 'x' && ((uint8_t*)base)[i + j] != pattern[j]) {
-                    found = false;
-                    break;
+        void InvokeClearMask(void* thisPtr) {
+            if (!thisPtr || !IsValid(g_clearMask)) {
+                return;
+            }
+
+            __try {
+                g_clearMask(thisPtr);
+            }
+            __except (EXCEPTION_EXECUTE_HANDLER) {
+            }
+        }
+
+        std::int64_t InvokeOrClear(MaskFunction original, void* thisPtr, double deltaTime) {
+            if (!IsDisabled()) {
+                if (original) {
+                    return original(thisPtr, deltaTime);
+                }
+                return 0;
+            }
+
+            InvokeClearMask(thisPtr);
+            return 0;
+        }
+
+        std::int64_t __fastcall HookPre(void* thisPtr, double deltaTime) {
+            return InvokeOrClear(g_origPre, thisPtr, deltaTime);
+        }
+
+        std::int64_t __fastcall HookMain(void* thisPtr, double deltaTime) {
+            return InvokeOrClear(g_origMain, thisPtr, deltaTime);
+        }
+
+        std::int64_t __fastcall HookPost(void* thisPtr, double deltaTime) {
+            return InvokeOrClear(g_origPost, thisPtr, deltaTime);
+        }
+
+        void* ScanDirect(const char* name, const char* pattern) {
+            std::cout << "[SCAN] " << name << "..." << std::endl;
+
+            void* address = Scanner::ScanMainMod(pattern);
+            if (!address) {
+                std::cout << "   -> [ERR] Pattern Not Found." << std::endl;
+                return nullptr;
+            }
+
+            const auto moduleBase = reinterpret_cast<uintptr_t>(GetModuleHandle(nullptr));
+            std::cout << "   -> Found at: 0x"
+                      << std::hex
+                      << (reinterpret_cast<uintptr_t>(address) - moduleBase)
+                      << std::dec
+                      << std::endl;
+            return address;
+        }
+
+        void* FindClearFunction(void* anchorFunction) {
+            if (!anchorFunction) {
+                return Scanner::ScanMainMod(Patterns::UnderwaterMaskClear);
+            }
+
+            const uintptr_t anchor = reinterpret_cast<uintptr_t>(anchorFunction);
+            if (void* local = Scanner::ScanRange(
+                    anchorFunction,
+                    ClearSearchWindow,
+                    Patterns::UnderwaterMaskClear)) {
+                return local;
+            }
+
+            const uintptr_t start = anchor > ClearSearchWindow
+                ? anchor - ClearSearchWindow
+                : 0;
+            if (start != 0 && start < anchor) {
+                if (void* local = Scanner::ScanRange(
+                        reinterpret_cast<void*>(start),
+                        static_cast<size_t>(anchor - start),
+                        Patterns::UnderwaterMaskClear)) {
+                    return local;
                 }
             }
-            if (found) {
-                return base + i;
-            }
+
+            return Scanner::ScanMainMod(Patterns::UnderwaterMaskClear);
         }
-        return 0;
+
+        bool InstallOne(void* target, void* hook, MaskFunction* original, const char* name) {
+            if (!target) {
+                return true;
+            }
+
+            if (MH_CreateHook(target, hook, reinterpret_cast<void**>(original)) == MH_OK) {
+                std::cout << "[SCAN] UnderwaterMask " << name << " Hook Ready." << std::endl;
+                return true;
+            }
+
+            std::cout << "[ERR] UnderwaterMask " << name << " Hook Failed." << std::endl;
+            return false;
+        }
     }
 
     void Init() {
-        if (!Config::Get().disable_underwater_mask) return;
+        if (!Config::Get().disable_underwater_mask) {
+            return;
+        }
 
-        void* addrMain = Scanner::ScanMainMod(Patterns::UnderwaterMaskMain);
-        if (addrMain) {
-            uintptr_t mainPtr = (uintptr_t)addrMain;
-            
-            const uint8_t sigClear[] = { 0x56, 0x57, 0x48, 0x83, 0xEC, 0x28, 0x48, 0x89, 0xCE, 0x80, 0x3D };
-            const char maskClear[] = "xxxxxxxxxxx";
-            
-            uintptr_t searchStart = (mainPtr >= 0x800) ? (mainPtr - 0x800) : 0;
-            uintptr_t addrClear = FindPatternLocal(searchStart, 0x800, sigClear, maskClear);
-            
-            if (addrClear) {
-                g_fnGLPLONFPDM = (fn_GLPLONFPPDM)addrClear;
-                std::cout << "[SCAN] Underwater Mask Clear Function Found.\n";
-            } else {
-                std::cout << "[WARN] Underwater Mask Clear Function Not Found, skipping active cleanup.\n";
-            }
+        void* addrPre = ScanDirect("UnderwaterMaskPreMain", Patterns::UnderwaterMaskPreMain);
+        void* addrMain = ScanDirect("UnderwaterMaskMain", Patterns::UnderwaterMaskMain);
+        void* addrPost = ScanDirect("UnderwaterMaskPostMain", Patterns::UnderwaterMaskPostMain);
 
-            if (MH_CreateHook(addrMain, (void*)Hooked_LELJFPLMCFH, (void**)&g_origLELJFPLMCFH) == MH_OK) {
-                std::cout << "[SCAN] Underwater Mask Hook Ready.\n";
-            } else {
-                std::cout << "[ERR] Underwater Mask Hook Failed.\n";
-            }
+        if (!addrPre && !addrMain && !addrPost) {
+            std::cout << "[ERR] UnderwaterMask patterns not found." << std::endl;
+            return;
+        }
+
+        void* clearAnchor = addrMain ? addrMain : (addrPre ? addrPre : addrPost);
+        g_clearMask = reinterpret_cast<ClearFunction>(FindClearFunction(clearAnchor));
+        if (g_clearMask) {
+            const auto moduleBase = reinterpret_cast<uintptr_t>(GetModuleHandle(nullptr));
+            std::cout << "[SCAN] UnderwaterMask clear function found at: 0x"
+                      << std::hex
+                      << (reinterpret_cast<uintptr_t>(g_clearMask) - moduleBase)
+                      << std::dec
+                      << std::endl;
         } else {
-            std::cout << "[ERR] Underwater Mask Pattern Not Found.\n";
+            std::cout << "[WARN] UnderwaterMask clear function not found; active cleanup unavailable." << std::endl;
+        }
+
+        bool ok = true;
+        ok &= InstallOne(addrPre, reinterpret_cast<void*>(HookPre), &g_origPre, "Pre");
+        ok &= InstallOne(addrMain, reinterpret_cast<void*>(HookMain), &g_origMain, "Main");
+        ok &= InstallOne(addrPost, reinterpret_cast<void*>(HookPost), &g_origPost, "Post");
+
+        if (!ok) {
+            std::cout << "[ERR] UnderwaterMask hook initialization failed." << std::endl;
         }
     }
 }
