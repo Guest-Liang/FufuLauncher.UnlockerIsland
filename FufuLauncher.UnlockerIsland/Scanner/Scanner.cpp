@@ -1,6 +1,8 @@
 ﻿#include "Scanner.h"
 #include <Windows.h> 
 #include <Psapi.h>
+#include <algorithm>
+#include <cstdint>
 #include <sstream>
 #include <vector>
 #include <iostream>
@@ -86,6 +88,66 @@ namespace Scanner {
             
             uintptr_t nextAddr = (uintptr_t)mbi.BaseAddress + mbi.RegionSize;
             
+            if (nextAddr <= current) {
+                break;
+            }
+            current = nextAddr;
+        }
+
+        return nullptr;
+    }
+
+    void* ScanRange(void* start, size_t size, const std::string& signature) {
+        if (!start || size == 0) return nullptr;
+
+        auto pattern = ParsePattern(signature);
+        if (pattern.empty()) return nullptr;
+
+        uintptr_t rangeStart = (uintptr_t)start;
+        uintptr_t rangeEnd = rangeStart + size;
+        if (rangeEnd < rangeStart) {
+            rangeEnd = UINTPTR_MAX;
+        }
+
+        const size_t pSize = pattern.size();
+        uintptr_t current = rangeStart;
+
+        while (current < rangeEnd) {
+            MEMORY_BASIC_INFORMATION mbi;
+            if (!VirtualQuery((LPCVOID)current, &mbi, sizeof(mbi))) {
+                current += 0x1000;
+                continue;
+            }
+
+            bool isGood = (mbi.State == MEM_COMMIT) &&
+                          ((mbi.Protect & PAGE_GUARD) == 0) &&
+                          ((mbi.Protect & PAGE_EXECUTE_READ) ||
+                           (mbi.Protect & PAGE_EXECUTE_READWRITE) ||
+                           (mbi.Protect & PAGE_READWRITE) ||
+                           (mbi.Protect & PAGE_READONLY));
+
+            uintptr_t regionStart = (std::max)((uintptr_t)mbi.BaseAddress, rangeStart);
+            uintptr_t regionEnd = (std::min)((uintptr_t)mbi.BaseAddress + mbi.RegionSize, rangeEnd);
+
+            if (isGood && regionEnd > regionStart && regionEnd - regionStart >= pSize) {
+                const uint8_t* pStart = (const uint8_t*)regionStart;
+                const size_t regionSize = regionEnd - regionStart;
+
+                for (size_t i = 0; i <= regionSize - pSize; ++i) {
+                    bool found = true;
+                    for (size_t j = 0; j < pSize; ++j) {
+                        if (pattern[j] != -1 && pattern[j] != pStart[i + j]) {
+                            found = false;
+                            break;
+                        }
+                    }
+                    if (found) {
+                        return (void*)(pStart + i);
+                    }
+                }
+            }
+
+            uintptr_t nextAddr = (uintptr_t)mbi.BaseAddress + mbi.RegionSize;
             if (nextAddr <= current) {
                 break;
             }
