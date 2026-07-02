@@ -64,6 +64,7 @@ typedef void* (__fastcall* tGetMainCamera)();
 typedef void* (__fastcall* tGetTransform)(void* pComponent);
 typedef void(__fastcall* tSetupResinList)(void* pThis);
 typedef void (__fastcall *tButtonClicked)(void*);
+typedef void (__fastcall *tClockPageBack)(void*, void*);
 
 extern std::atomic<void*> o_GetFrameCount;
 extern std::atomic<void*> o_SetFrameCount;
@@ -87,6 +88,8 @@ extern std::atomic<void*> o_GameUpdate;
 extern std::atomic<void*> o_SetupResinList;
 extern std::atomic<void*> o_ClockPageOk;
 extern std::atomic<void*> p_ClockPageClose;
+extern std::atomic<void*> p_ClockPageFinish;
+extern std::atomic<void*> p_ClockPageBack;
 extern std::atomic<void*> o_ActorManagerCtor;
 extern std::atomic<void*> p_GetGlobalActor;
 extern std::atomic<void*> p_AvatarPaimonAppear;

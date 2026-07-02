@@ -20,8 +20,11 @@ namespace Offsets {
     std::string GetText;
     std::string ClockPageOkOffset;
     std::string ClockPageCloseOffset;
+    std::string ClockPageFinishOffset;
+    std::string ClockPageBackOffset;
     std::string ResinListOffset;
     std::string TouchInputOffset;
+    std::string InnerDispatcherOffset;
     std::string EventCameraOffset;
     std::string SetTextOffset;
     std::string SetColorOffset;
@@ -88,8 +91,11 @@ namespace Offsets {
             GetText = Patterns::OS::GetText;
             ClockPageOkOffset = Patterns::OS::ClockPageOkOffset;
             ClockPageCloseOffset = Patterns::OS::ClockPageCloseOffset;
+            ClockPageFinishOffset = Patterns::OS::ClockPageFinishOffset;
+            ClockPageBackOffset = Patterns::OS::ClockPageBackOffset;
             ResinListOffset = Patterns::OS::ResinListOffset;
             TouchInputOffset = Patterns::OS::TouchInputOffset;
+            InnerDispatcherOffset = Patterns::OS::InnerDispatcherOffset;
             EventCameraOffset = Patterns::OS::EventCameraOffset;
             SetTextOffset = Patterns::OS::SetText;
             SetColorOffset = Patterns::OS::SetColor;
@@ -113,8 +119,11 @@ namespace Offsets {
             GetText = Patterns::CN::GetText;
             ClockPageOkOffset = Patterns::CN::ClockPageOkOffset;
             ClockPageCloseOffset = Patterns::CN::ClockPageCloseOffset;
+            ClockPageFinishOffset = Patterns::CN::ClockPageFinishOffset;
+            ClockPageBackOffset = Patterns::CN::ClockPageBackOffset;
             ResinListOffset = Patterns::CN::ResinListOffset;
             TouchInputOffset = Patterns::CN::TouchInputOffset;
+            InnerDispatcherOffset = Patterns::CN::InnerDispatcherOffset;
             EventCameraOffset = Patterns::CN::EventCameraOffset;
             SetTextOffset = Patterns::CN::SetText;
             SetColorOffset = Patterns::CN::SetColor;
@@ -151,8 +160,11 @@ namespace Offsets {
                 GetText = ParseOffsetFromJson(jsonContent, region, "GetText", GetText);
                 ClockPageOkOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageOkOffset", ClockPageOkOffset);
                 ClockPageCloseOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageCloseOffset", ClockPageCloseOffset);
+                ClockPageFinishOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageFinishOffset", ClockPageFinishOffset);
+                ClockPageBackOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageBackOffset", ClockPageBackOffset);
                 ResinListOffset = ParseOffsetFromJson(jsonContent, region, "ResinListOffset", ResinListOffset);
                 TouchInputOffset = ParseOffsetFromJson(jsonContent, region, "TouchInput", TouchInputOffset);
+                InnerDispatcherOffset = ParseOffsetFromJson(jsonContent, region, "InnerDispatcherOffset", InnerDispatcherOffset);
                 EventCameraOffset = ParseOffsetFromJson(jsonContent, region, "EventCamera", EventCameraOffset);
                 SetTextOffset = ParseOffsetFromJson(jsonContent, region, "SetTextOffset", SetTextOffset);
                 SetColorOffset = ParseOffsetFromJson(jsonContent, region, "SetColorOffset", SetColorOffset);

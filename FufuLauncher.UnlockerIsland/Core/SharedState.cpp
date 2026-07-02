@@ -22,6 +22,8 @@ std::atomic<void*> o_GameUpdate{ nullptr };
 std::atomic<void*> o_SetupResinList{ nullptr };
 std::atomic<void*> o_ClockPageOk{ nullptr };
 std::atomic<void*> p_ClockPageClose{ nullptr };
+std::atomic<void*> p_ClockPageFinish{ nullptr };
+std::atomic<void*> p_ClockPageBack{ nullptr };
 std::atomic<void*> o_ActorManagerCtor{ nullptr };
 std::atomic<void*> p_GetGlobalActor{ nullptr };
 std::atomic<void*> p_AvatarPaimonAppear{ nullptr };

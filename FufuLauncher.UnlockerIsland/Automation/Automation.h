@@ -15,6 +15,7 @@ namespace HelperAddr {
     extern uintptr_t InnerDispatcher;
     extern uintptr_t CookHandler;
     extern uintptr_t CookShowPage;
+    extern uintptr_t CookPatchAfterInit;
     extern uintptr_t CookPatchEntity;
     extern uintptr_t CookPatchPathB;
     extern uintptr_t CookPatchBplSkip;
@@ -27,6 +28,7 @@ namespace HelperAddr {
 }
 
 typedef __int64 (__fastcall *Fn_CookShowPage)(__int64, __int64);
+typedef bool    (__fastcall *Fn_CookHandler)(__int64, __int64, __int64);
 typedef bool    (__fastcall *Fn_Handler)(__int64, __int64);
 
 extern Fn_CookShowPage g_oCookShowPage;
