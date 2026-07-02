@@ -265,24 +265,39 @@ static void ClockPageOk_SafeLogic(void* pThis, bool& out_handled) {
         std::cout << "[Clock Debug] OK Button Hook Triggered!" << std::endl;
     }
 
-    if (cfg.enable_clock_speedup && p_ClockPageClose.load()) {
-        auto closeBtnFunc = (tButtonClicked)p_ClockPageClose.load();
-
-        if (!closeBtnFunc || IsBadReadPtr((void*)closeBtnFunc, 1)) {
-            return;
-        }
+    if (cfg.enable_clock_speedup) {
+        out_handled = true;
 
         if (orig && !IsBadReadPtr((void*)orig, 1)) {
             orig(pThis);
         }
 
+        auto finishFunc = (tButtonClicked)p_ClockPageFinish.load();
+        if (finishFunc && !IsBadReadPtr((void*)finishFunc, 1)) {
+            if (cfg.debug_console) {
+                std::cout << "[Clock Debug] Forcing Finish UI..." << std::endl;
+            }
+            finishFunc(pThis);
+        }
+
+        auto backFunc = (tClockPageBack)p_ClockPageBack.load();
+        if (backFunc && !IsBadReadPtr((void*)backFunc, 1)) {
+            if (cfg.debug_console) {
+                std::cout << "[Clock Debug] Forcing Back UI..." << std::endl;
+            }
+            backFunc(pThis, nullptr);
+            return;
+        }
+
+        auto closeBtnFunc = (tButtonClicked)p_ClockPageClose.load();
+        if (!closeBtnFunc || IsBadReadPtr((void*)closeBtnFunc, 1)) {
+            return;
+        }
         if (cfg.debug_console) {
             std::cout << "[Clock Debug] Forcing Close UI..." << std::endl;
         }
 
         closeBtnFunc(pThis);
-
-        out_handled = true;
     }
 }
 

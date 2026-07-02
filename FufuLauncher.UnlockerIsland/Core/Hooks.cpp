@@ -384,7 +384,19 @@ bool Hooks::Init() {
     HOOK_REL("GetFrameCount", Patterns::GetFrameCount, hk_GetFrameCount, o_GetFrameCount);
     SCAN_REL("SetFrameCount", Patterns::SetFrameCount, o_SetFrameCount);
     HOOK_DIR("ChangeFOV", Patterns::ChangeFOV, hk_ChangeFov, o_ChangeFov);
-    SCAN_DIR("SwitchInputDeviceToTouchScreen", Patterns::SwitchInputDeviceToTouchScreen, p_SwitchInput);
+    {
+        HMODULE hMod = GetModuleHandle(NULL);
+        uintptr_t offsetTouchInput = StringToAddr(Offsets::TouchInputOffset);
+        if (hMod && offsetTouchInput) {
+            void* touchInputAddr = (void*)((uintptr_t)hMod + offsetTouchInput);
+            p_SwitchInput.store(touchInputAddr);
+            LogOffset("SwitchInputDeviceToTouchScreen", touchInputAddr, touchInputAddr);
+            std::cout << "[SCAN] SwitchInputDeviceToTouchScreen resolved via offset at: 0x"
+                      << std::hex << offsetTouchInput << std::dec << '\n';
+        } else {
+            std::cout << "[ERR] SwitchInputDeviceToTouchScreen offset is missing.\n";
+        }
+    }
     HOOK_DIR("QuestBanner", Patterns::QuestBanner, hk_SetupQuestBanner, o_SetupQuestBanner);
     SCAN_DIR("FindGameObject", Patterns::FindGameObject, p_FindGameObject);
     HOOK_REL("SetActive", Patterns::SetActive, hk_SetActive, o_SetActive);
@@ -429,19 +441,18 @@ bool Hooks::Init() {
         std::cout << "   -> [ERR] EventCamera not found.\n";
     }
 
-    std::cout << "[SCAN] Scanning InnerDispatcher (Multi-pattern matching)..." << std::endl;
-
-    const char* dispPatterns[] = { Patterns::Helper::InnerDispatcher_1, Patterns::Helper::InnerDispatcher_2, Patterns::Helper::InnerDispatcher_3, nullptr };
+    std::cout << "[SCAN] Resolving InnerDispatcher via offset..." << std::endl;
 
     void* pInnerDisp = nullptr;
-    for (int i = 0; dispPatterns[i] != nullptr; i++) {
-        pInnerDisp = Scanner::ScanMainMod(dispPatterns[i]);
-        if (pInnerDisp) {
-            uintptr_t moduleBase = (uintptr_t)GetModuleHandle(NULL);
-            uintptr_t offset = (uintptr_t)pInnerDisp - moduleBase;
-            std::cout << "[SCAN] InnerDispatcher hit at index: " << i
-                      << " | Offset: 0x" << std::hex << std::uppercase << offset << std::nouppercase << std::dec << std::endl;
-            break;
+    {
+        HMODULE hMod = GetModuleHandle(NULL);
+        uintptr_t offsetInnerDispatcher = StringToAddr(Offsets::InnerDispatcherOffset);
+        if (hMod && offsetInnerDispatcher) {
+            pInnerDisp = (void*)((uintptr_t)hMod + offsetInnerDispatcher);
+            LogOffset("Helper.InnerDispatcher", pInnerDisp, pInnerDisp);
+            std::cout << "[SCAN] InnerDispatcher resolved via offset: 0x"
+                      << std::hex << std::uppercase << offsetInnerDispatcher
+                      << std::nouppercase << std::dec << std::endl;
         }
     }
 
@@ -455,7 +466,7 @@ bool Hooks::Init() {
         std::cout << "   -> CookHandler resolved at: 0x" << std::hex << HelperAddr::CookHandler << std::dec << std::endl;
         std::cout << "   -> ExpHandler resolved at: 0x" << std::hex << HelperAddr::ExpHandler << std::dec << std::endl;
     } else {
-        std::cout << "[ERR] Fatal: All 3 patterns failed to find InnerDispatcher." << std::endl;
+        std::cout << "[ERR] Fatal: InnerDispatcherOffset is missing or invalid." << std::endl;
     }
 
     if (HelperAddr::CookHandler) {
@@ -521,17 +532,47 @@ bool Hooks::Init() {
             std::cout << "[SCAN] AvatarPaimonAppear at: 0x" << std::hex << offsetPaimon << std::dec << '\n';
 
             uintptr_t offsetClockOk = StringToAddr(Offsets::ClockPageOkOffset);
-            void* clockOkAddr = (void*)(base + offsetClockOk);
-            if (MH_CreateHook(clockOkAddr, (void*)hk_ClockPageOk, (void**)&o_ClockPageOk) == MH_OK) {
-                std::cout << "[SCAN] ClockPageOk hooked via offset at: 0x" << std::hex << offsetClockOk << std::dec << '\n';
+            if (offsetClockOk) {
+                void* clockOkAddr = (void*)(base + offsetClockOk);
+                LogOffset("ClockPage.Ok", clockOkAddr, clockOkAddr);
+                if (MH_CreateHook(clockOkAddr, (void*)hk_ClockPageOk, (void**)&o_ClockPageOk) == MH_OK) {
+                    std::cout << "[SCAN] ClockPageOk hooked via offset at: 0x" << std::hex << offsetClockOk << std::dec << '\n';
+                } else {
+                    std::cout << "[ERR] Failed to hook ClockPageOk via offset.\n";
+                }
             } else {
-                std::cout << "[ERR] Failed to hook ClockPageOk via offset.\n";
+                std::cout << "[ERR] ClockPageOk offset is missing.\n";
             }
 
             uintptr_t offsetClockClose = StringToAddr(Offsets::ClockPageCloseOffset);
-            void* clockCloseAddr = (void*)(base + offsetClockClose);
-            p_ClockPageClose.store(clockCloseAddr);
-            std::cout << "[SCAN] ClockPageClose resolved via offset at: 0x" << std::hex << offsetClockClose << std::dec << '\n';
+            if (offsetClockClose) {
+                void* clockCloseAddr = (void*)(base + offsetClockClose);
+                p_ClockPageClose.store(clockCloseAddr);
+                LogOffset("ClockPage.Close", clockCloseAddr, clockCloseAddr);
+                std::cout << "[SCAN] ClockPageClose resolved via offset at: 0x" << std::hex << offsetClockClose << std::dec << '\n';
+            } else {
+                std::cout << "[WARN] ClockPageClose offset is missing.\n";
+            }
+
+            uintptr_t offsetClockFinish = StringToAddr(Offsets::ClockPageFinishOffset);
+            if (offsetClockFinish) {
+                void* clockFinishAddr = (void*)(base + offsetClockFinish);
+                p_ClockPageFinish.store(clockFinishAddr);
+                LogOffset("ClockPage.Finish", clockFinishAddr, clockFinishAddr);
+                std::cout << "[SCAN] ClockPageFinish resolved via offset at: 0x" << std::hex << offsetClockFinish << std::dec << '\n';
+            } else {
+                std::cout << "[WARN] ClockPageFinish offset is missing; falling back to OK+Close.\n";
+            }
+
+            uintptr_t offsetClockBack = StringToAddr(Offsets::ClockPageBackOffset);
+            if (offsetClockBack) {
+                void* clockBackAddr = (void*)(base + offsetClockBack);
+                p_ClockPageBack.store(clockBackAddr);
+                LogOffset("ClockPage.Back", clockBackAddr, clockBackAddr);
+                std::cout << "[SCAN] ClockPageBack resolved via offset at: 0x" << std::hex << offsetClockBack << std::dec << '\n';
+            } else {
+                std::cout << "[WARN] ClockPageBack offset is missing; falling back to Close path.\n";
+            }
         } else {
             std::cout << "[ERR] Critical: GetModuleHandle failed!" << '\n';
         }
