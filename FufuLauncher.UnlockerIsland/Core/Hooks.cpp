@@ -459,7 +459,6 @@ bool Hooks::Init() {
     HOOK_REL("PlayerPerspective", Patterns::PlayerPerspective, hk_PlayerPerspective, o_PlayerPerspective);
     SCAN_REL("SetSyncCount", Patterns::SetSyncCount, o_SetSyncCount);
     SCAN_DIR("CheckCanOpenMap", Patterns::CheckCanOpenMap, p_CheckCanOpenMap);
-    HOOK_REL("SetupResinList", Patterns::SetupResinList, hk_SetupResinList, o_SetupResinList);
     SCAN_DIR("StringNew", Patterns::StringNew, p_StringNew);
     SCAN_DIR("ShowDialog", Patterns::ShowDialog, p_ShowDialog);
 

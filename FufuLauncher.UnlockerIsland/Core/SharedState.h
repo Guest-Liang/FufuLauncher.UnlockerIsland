@@ -52,7 +52,6 @@ typedef void (WINAPI *tVoidFunc)(void*);
 typedef Il2CppString* (*tGetName)(void*);
 typedef __int64 (*FnStringNew)(const char*);
 typedef void (*FnShowDialog)(__int64, __int64, __int64, __int64, int);
-typedef void (__fastcall *tSetupResinList)(void* pThis);
 typedef void (__fastcall *tButtonClicked)(void*);
 typedef void (__fastcall *tClockPageBack)(void*, void*);
 
@@ -75,7 +74,6 @@ extern std::atomic<void*> p_OpenTeamPage;
 extern std::atomic<void*> o_PlayerPerspective;
 extern std::atomic<void*> o_SetSyncCount;
 extern std::atomic<void*> o_GameUpdate;
-extern std::atomic<void*> o_SetupResinList;
 extern std::atomic<void*> o_ClockPageOk;
 extern std::atomic<void*> p_ClockPageClose;
 extern std::atomic<void*> p_ClockPageFinish;

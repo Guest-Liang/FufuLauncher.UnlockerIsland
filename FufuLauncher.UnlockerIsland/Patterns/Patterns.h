@@ -23,7 +23,6 @@ namespace Patterns {
     inline constexpr const char* GameUpdate = "55 56 57 53 48 83 EC ? 48 8D 6C 24 ? 48 C7 45 ? ? ? ? ? 48 8B 41 ? 48 85 C0 0F 84 ? ? ? ? 83 78";
     inline constexpr const char* CheckCanOpenMap = "E8 ?? ?? ?? ?? 84 C0 0F 85 ?? ?? ?? ?? 48 8B 45 ?? 48 85 C0 74 ?? 41 8B 17 4C 8B 40 ?? 48 8B 48 ?? FF 50 ?? 84 C0 0F 84 ?? ?? ?? ??";
     inline constexpr const char* GetName = "40 53 48 81 EC ?? ?? ?? ?? 48 8B D9 48 85 C9 0F 84 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 85 C0 0F 84 ?? ?? ?? ?? 48 8B 10 48 8B C8 FF 52 ?? 48 85 C0 0F 85 ?? ?? ?? ?? 48 8B CB E8 ?? ?? ?? ??";
-    inline constexpr const char* SetupResinList = "E8 ?? ?? ?? ?? 84 DB 74 ?? 4C 89 F1 E8 ?? ?? ?? ?? 49 8B 86 ?? ?? ?? ?? 48 85 C0 75 ?? E9 ?? ?? ?? ??";
     inline constexpr const char* GetActive = "E8 ?? ?? ?? ?? 84 C0 74 ?? 48 89 F1 E8 ?? ?? ?? ?? 48 8B 4E ?? 48 85 C9 0F 84 ?? ?? ?? ?? 80 79 ?? ?? 0F 94 C1 08 C1";
     inline constexpr const char* StringNew = "56 48 83 EC 20 48 85 C9 74 ? 48 89 CE E8 ? ? ? ? 48 89 F1 89 C2";
     inline constexpr const char* ShowDialog = "41 57 41 56 56 57 55 53 48 83 EC 28 4D 89 CF 4C 89 C7 48 89 D5 48 89 CB";
@@ -63,7 +62,6 @@ namespace Patterns {
         inline constexpr const char* ClockPageCloseOffset = "ECF7DC0";
         inline constexpr const char* ClockPageFinishOffset = "11919A50";
         inline constexpr const char* ClockPageBackOffset = "119172C0";
-        inline constexpr const char* ResinListOffset = "220";
         inline constexpr const char* TouchInputOffset = "8D00130";
         inline constexpr const char* InnerDispatcherOffset = "105C0E80";
         inline constexpr const char* EventCameraOffset = "0";
@@ -83,7 +81,6 @@ namespace Patterns {
         inline constexpr const char* ClockPageCloseOffset = "ED0A3E0";
         inline constexpr const char* ClockPageFinishOffset = "119315A0";
         inline constexpr const char* ClockPageBackOffset = "11930990";
-        inline constexpr const char* ResinListOffset = "230";
         inline constexpr const char* TouchInputOffset = "8CEAB90";
         inline constexpr const char* InnerDispatcherOffset = "105CAE70";
         inline constexpr const char* EventCameraOffset = "0";
@@ -112,7 +109,6 @@ namespace Offsets {
     extern std::string ClockPageCloseOffset;
     extern std::string ClockPageFinishOffset;
     extern std::string ClockPageBackOffset;
-    extern std::string ResinListOffset;
     extern std::string TouchInputOffset;
     extern std::string InnerDispatcherOffset;
     extern std::string EventCameraOffset;

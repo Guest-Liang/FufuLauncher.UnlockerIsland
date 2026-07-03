@@ -3,7 +3,6 @@
 #include "../Config/Config.h"
 #include "../Core/Utils.h"
 #include "../Automation/Automation.h"
-#include "../il2cpp/Il2CppList.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -345,73 +344,5 @@ auto hk_DisplayFog(__int64 a1, __int64 a2) -> __int64 {
     }
     auto orig = (tDisplayFog)o_DisplayFog.load();
     return orig ? orig(a1, a2) : 0;
-}
-
-static void SetupResinList_SafeLogic(void* pThis) {
-    auto cfg = Config::Get();
-
-    tSetupResinList original = (tSetupResinList)o_SetupResinList.load();
-    if (original) {
-        original(pThis);
-    }
-
-    if (!pThis) {
-        return;
-    }
-
-    static intptr_t cachedResinListOffset = 0;
-    if (cachedResinListOffset == 0) {
-        std::stringstream ss;
-        ss << std::hex << Offsets::ResinListOffset;
-        ss >> cachedResinListOffset;
-        if (cachedResinListOffset == 0) cachedResinListOffset = 0x230;
-    }
-
-    Il2CppList<ULONG64>** pResinListPtr = (Il2CppList<ULONG64>**)((intptr_t)pThis + cachedResinListOffset);
-
-    if (!pResinListPtr || IsBadReadPtr(pResinListPtr, sizeof(void*))) {
-        return;
-    }
-
-    Il2CppList<ULONG64>* resinList = *pResinListPtr;
-    if (!resinList || IsBadReadPtr(resinList, sizeof(Il2CppList<ULONG64>))) {
-        return;
-    }
-
-    int count = resinList->Count();
-    if (count <= 0 || count > 1000) {
-        return;
-    }
-
-    std::vector<ULONG64> toRemove;
-
-    for (int i = 0; i < count; i++) {
-        ULONG64 item = resinList->Get(i);
-
-        UINT32 hight = (UINT32)(item >> 32);
-        UINT32 low = (UINT32)(item & 0xFFFFFFFF);
-
-        if (((hight == 106 || low == 106) && cfg.ResinItem000106) ||
-                    ((hight == 201 || low == 201) && cfg.ResinItem000201) ||
-                    ((hight == 107009 || low == 107009) && cfg.ResinItem107009) ||
-                    ((hight == 107012 || low == 107012) && cfg.ResinItem107012) ||
-                    ((hight == 220007 || low == 220007) && cfg.ResinItem220007))
-        {
-            toRemove.push_back(item);
-        }
-    }
-
-    for (ULONG64 item : toRemove) {
-        if (item == 0) continue;
-        resinList->Remove(item);
-    }
-}
-
-void __fastcall hk_SetupResinList(void* pThis) {
-    __try {
-        SetupResinList_SafeLogic(pThis);
-    }
-    __except (EXCEPTION_EXECUTE_HANDLER) {
-    }
 }
 

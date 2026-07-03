@@ -15,7 +15,6 @@ namespace Offsets {
     std::string ClockPageCloseOffset;
     std::string ClockPageFinishOffset;
     std::string ClockPageBackOffset;
-    std::string ResinListOffset;
     std::string TouchInputOffset;
     std::string InnerDispatcherOffset;
     std::string EventCameraOffset;
@@ -76,7 +75,6 @@ namespace Offsets {
             ClockPageCloseOffset = Patterns::OS::ClockPageCloseOffset;
             ClockPageFinishOffset = Patterns::OS::ClockPageFinishOffset;
             ClockPageBackOffset = Patterns::OS::ClockPageBackOffset;
-            ResinListOffset = Patterns::OS::ResinListOffset;
             TouchInputOffset = Patterns::OS::TouchInputOffset;
             InnerDispatcherOffset = Patterns::OS::InnerDispatcherOffset;
             EventCameraOffset = Patterns::OS::EventCameraOffset;
@@ -95,7 +93,6 @@ namespace Offsets {
             ClockPageCloseOffset = Patterns::CN::ClockPageCloseOffset;
             ClockPageFinishOffset = Patterns::CN::ClockPageFinishOffset;
             ClockPageBackOffset = Patterns::CN::ClockPageBackOffset;
-            ResinListOffset = Patterns::CN::ResinListOffset;
             TouchInputOffset = Patterns::CN::TouchInputOffset;
             InnerDispatcherOffset = Patterns::CN::InnerDispatcherOffset;
             EventCameraOffset = Patterns::CN::EventCameraOffset;
@@ -127,7 +124,6 @@ namespace Offsets {
                 ClockPageCloseOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageCloseOffset", ClockPageCloseOffset);
                 ClockPageFinishOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageFinishOffset", ClockPageFinishOffset);
                 ClockPageBackOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageBackOffset", ClockPageBackOffset);
-                ResinListOffset = ParseOffsetFromJson(jsonContent, region, "ResinListOffset", ResinListOffset);
                 TouchInputOffset = ParseOffsetFromJson(jsonContent, region, "TouchInput", TouchInputOffset);
                 InnerDispatcherOffset = ParseOffsetFromJson(jsonContent, region, "InnerDispatcherOffset", InnerDispatcherOffset);
                 EventCameraOffset = ParseOffsetFromJson(jsonContent, region, "EventCamera", EventCameraOffset);

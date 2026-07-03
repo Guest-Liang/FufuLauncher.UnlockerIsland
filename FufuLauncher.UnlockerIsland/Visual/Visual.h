@@ -12,7 +12,6 @@ void WINAPI hk_CraftEntry(void* _this);
 void WINAPI hk_OpenTeam();
 void WINAPI hk_SetActive(void* pThis, bool active);
 auto hk_DisplayFog(__int64 a1, __int64 a2) -> __int64;
-void __fastcall hk_SetupResinList(void* pThis);
 void InitExpHandlerPrologueSafe();
 
 bool CheckWindowFocused(HWND window);

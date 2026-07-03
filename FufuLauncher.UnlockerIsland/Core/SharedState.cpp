@@ -19,7 +19,6 @@ std::atomic<void*> p_OpenTeamPage{ nullptr };
 std::atomic<void*> o_PlayerPerspective{ nullptr };
 std::atomic<void*> o_SetSyncCount{ nullptr };
 std::atomic<void*> o_GameUpdate{ nullptr };
-std::atomic<void*> o_SetupResinList{ nullptr };
 std::atomic<void*> o_ClockPageOk{ nullptr };
 std::atomic<void*> p_ClockPageClose{ nullptr };
 std::atomic<void*> p_ClockPageFinish{ nullptr };
