@@ -142,19 +142,15 @@
         </Link>
     </ItemDefinitionGroup>
     <ItemGroup>
-        <ClInclude Include="CameraTweaks\CameraTweaks.h" />
         <ClInclude Include="Config\Config.h" />
         <ClInclude Include="Core\Hooks.h" />
         <ClInclude Include="Core\SharedState.h" />
         <ClInclude Include="Patterns\Patterns.h" />
-        <ClInclude Include="FreeCam\FreeCam.h" />
         <ClInclude Include="Automation\Automation.h" />
-        <ClInclude Include="CustomUID\CustomUID.h" />
         <ClInclude Include="RainbowDamage\RainbowDamage.h" />
         <ClInclude Include="Paimon\Paimon.h" />
         <ClInclude Include="HideUI\HideUI.h" />
         <ClInclude Include="Network\Network.h" />
-        <ClInclude Include="RenderScale\RenderScale.h" />
         <ClInclude Include="UnderwaterMask\UnderwaterMask.h" />
         <ClInclude Include="Visual\Visual.h" />
         <ClInclude Include="il2cpp\Il2CppArray.h" />
@@ -165,17 +161,13 @@
         <ClInclude Include="Core\Utils.h" />
     </ItemGroup>
     <ItemGroup>
-        <ClCompile Include="CameraTweaks\CameraTweaks.cpp" />
         <ClCompile Include="Config\Config.cpp" />
         <ClCompile Include="Core\dllmain.cpp" />
         <ClCompile Include="Core\Hooks.cpp" />
-        <ClCompile Include="RenderScale\RenderScale.cpp" />
         <ClCompile Include="Scanner\Scanner.cpp" />
         <ClCompile Include="Core\SharedState.cpp" />
         <ClCompile Include="Patterns\Patterns.cpp" />
-        <ClCompile Include="FreeCam\FreeCam.cpp" />
         <ClCompile Include="Automation\Automation.cpp" />
-        <ClCompile Include="CustomUID\CustomUID.cpp" />
         <ClCompile Include="RainbowDamage\RainbowDamage.cpp" />
         <ClCompile Include="Paimon\Paimon.cpp" />
         <ClCompile Include="HideUI\HideUI.cpp" />

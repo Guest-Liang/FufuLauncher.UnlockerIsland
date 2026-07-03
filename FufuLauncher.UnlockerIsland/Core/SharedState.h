@@ -6,8 +6,6 @@
 #include <atomic>
 #include <mutex>
 #include <vector>
-#include <map>
-#include <string>
 #include <list>
 #include <d3d11.h>
 #include <dxgi1_2.h>
@@ -58,11 +56,7 @@ typedef Il2CppString* (*tGetName)(void*);
 typedef void (WINAPI *tSetUid)(void*, uint32_t);
 typedef __int64 (*FnStringNew)(const char*);
 typedef void (*FnShowDialog)(__int64, __int64, __int64, __int64, int);
-typedef void (*tCamera_GetC2W)(Matrix4x4* out_result, void* _this, void* method_info);
-typedef void(__fastcall* tSetPos)(void* pTransform, Vector3* pPos);
-typedef void* (__fastcall* tGetMainCamera)();
-typedef void* (__fastcall* tGetTransform)(void* pComponent);
-typedef void(__fastcall* tSetupResinList)(void* pThis);
+typedef void (__fastcall *tSetupResinList)(void* pThis);
 typedef void (__fastcall *tButtonClicked)(void*);
 typedef void (__fastcall *tClockPageBack)(void*, void*);
 
@@ -97,7 +91,6 @@ extern std::atomic<void*> p_CheckCanOpenMap;
 extern std::atomic<void*> p_GetName;
 extern std::atomic<void*> o_send;
 extern std::atomic<void*> o_sendto;
-extern std::atomic<void*> o_SetPos;
 extern std::atomic<void*> p_GetActive;
 extern std::atomic<void*> o_SetUid;
 extern std::atomic<void*> p_StringNew;
@@ -114,9 +107,6 @@ extern ID3D11RenderTargetView* g_mainRenderTargetView;
 extern HWND g_hGameWindow_ImGui;
 extern tResizeBuffers o_ResizeBuffers;
 extern tPresent1 o_Present1;
-extern tGetMainCamera call_GetMainCamera;
-extern tGetTransform call_GetTransform;
-extern tCamera_GetC2W call_Camera_GetC2W;
 extern void* g_ActorManagerInstance;
 extern uint32_t g_CurrentUID;
 
@@ -125,26 +115,10 @@ extern bool g_ResistInBeyd;
 
 extern std::list<std::wstring> GrassPrefix;
 
-extern const float FC_BASE_SPEED;
-extern const float FC_SHIFT_MULTIPLIER;
-extern const float FC_CTRL_MULTIPLIER;
-extern const float FC_ACCELERATION;
-extern const float FC_FRICTION;
-
-namespace FreeCamState {
-    extern volatile float camX, camY, camZ;
-    extern volatile float velX, velY, velZ;
-    extern float targetVelX, targetVelY, targetVelZ;
-    extern void* mainCameraTransform;
-    extern bool isActive;
-    extern bool isObjectSelectionMode;
-    extern void* currentTargetTransform;
-    extern std::vector<void*> capturedTransforms;
-    extern std::mutex transformMutex;
-    extern int selectionIndex;
-    extern std::map<void*, ULONGLONG> activeTransformsMap;
-    extern std::vector<void*> stableList;
-}
+struct SafeFogBuffer {
+    __declspec(align(16)) uint8_t data[64];
+    uint8_t padding[192];
+};
 
 extern std::atomic<bool> g_ShouldShowDialog;
 extern std::string g_DialogText;

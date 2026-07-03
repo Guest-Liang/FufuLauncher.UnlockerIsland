@@ -58,23 +58,6 @@ struct ModConfig {
     bool display_paimon_v1 = false;
     bool display_paimon_v2 = false;
 
-    bool enable_free_cam = false;
-    
-    int free_cam_key = VK_F5;
-    
-    int free_cam_reset_key = VK_F7;
-    
-    int free_cam_forward = VK_UP;
-    int free_cam_backward = VK_DOWN;
-    int free_cam_left = VK_LEFT;
-    int free_cam_right = VK_RIGHT;
-    int free_cam_up = VK_SPACE;
-    int free_cam_down = VK_SUBTRACT;
-    int free_cam_speed_up = VK_SHIFT;
-    int free_cam_speed_down = VK_CONTROL;
-
-    bool enable_free_cam_movement_fix = true;
-
     bool hide_grass = false;
 
     bool hide_grass_indiscriminate = false;
@@ -93,34 +76,9 @@ struct ModConfig {
     int auto_cook_key = VK_F10;
     int auto_expedition_key = VK_F9;
 
-    bool enable_custom_uid = false;
-    std::string custom_uid_str = "999999999";
-
-    bool enable_custom_uid_color = false;
-    float custom_uid_color_r = 1.0f; // 红色通道 (0.0 ~ 1.0)
-    float custom_uid_color_g = 1.0f; // 绿色通道 (0.0 ~ 1.0)
-    float custom_uid_color_b = 1.0f; // 蓝色通道 (0.0 ~ 1.0)
-    float custom_uid_color_a = 1.0f; // 透明度 (0.0 ~ 1.0)
-
-    bool enable_rainbow_uid = false;
-    float rainbow_uid_speed = 5.0f; // seconds per full cycle
-
-    // Gradient colors as 0xRRGGBB
-    unsigned int gradient_color_0 = 0xEF9393;
-    unsigned int gradient_color_1 = 0xE17DC2;
-    unsigned int gradient_color_2 = 0x998EE0;
-    unsigned int gradient_color_3 = 0x43ADD0;
-    unsigned int gradient_color_4 = 0x8BDEDA;
-
     bool enable_rainbow_damage = false;
     int rainbow_damage_mode = 0;
     int rainbow_fixed_color_idx = 0;
-
-    bool enable_render_scale = false;
-    float render_scale_value = 0.01f;
-
-    bool disable_camera_smooth = false;
-    bool disable_camera_blend = false;
 
     bool disable_underwater_mask = false;
 };

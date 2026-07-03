@@ -9,16 +9,12 @@
 #include "../MinHook/MinHook.h"
 #include "SharedState.h"
 #include "../Patterns/Patterns.h"
-#include "../FreeCam/FreeCam.h"
 #include "../Automation/Automation.h"
-#include "../CustomUID/CustomUID.h"
 #include "../RainbowDamage/RainbowDamage.h"
 #include "../Paimon/Paimon.h"
 #include "../HideUI/HideUI.h"
 #include "../Network/Network.h"
 #include "../Visual/Visual.h"
-#include "../RenderScale/RenderScale.h"
-#include "../CameraTweaks/CameraTweaks.h"
 #include "../UnderwaterMask/UnderwaterMask.h"
 #include <iostream>
 #include <atomic>
@@ -26,13 +22,9 @@
 #include <string>
 #include <d3d11.h>
 #include <processthreadsapi.h>
-#include <ctime>
-#include <vector>
 #include <algorithm>
 #include <fstream>
-#include <iomanip>
 #include <sstream>
-#include <winsock2.h>
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "MinHook/libMinHook.x64.lib")
@@ -175,6 +167,80 @@ void UpdateRealUID() {
     });
 }
 
+// Moved from FreeCam.cpp - clock speedup feature
+static void ClockPageOk_SafeLogic(void* pThis, bool& out_handled) {
+    out_handled = false;
+    auto& cfg = Config::Get();
+    auto orig = (tButtonClicked)o_ClockPageOk.load();
+
+    if (cfg.debug_console) {
+        std::cout << "[Clock Debug] OK Button Hook Triggered!" << std::endl;
+    }
+
+    if (cfg.enable_clock_speedup) {
+        out_handled = true;
+
+        if (orig && !IsBadReadPtr((void*)orig, 1)) {
+            orig(pThis);
+        }
+
+        auto finishFunc = (tButtonClicked)p_ClockPageFinish.load();
+        if (finishFunc && !IsBadReadPtr((void*)finishFunc, 1)) {
+            if (cfg.debug_console) {
+                std::cout << "[Clock Debug] Forcing Finish UI..." << std::endl;
+            }
+            finishFunc(pThis);
+        }
+
+        auto backFunc = (tClockPageBack)p_ClockPageBack.load();
+        if (backFunc && !IsBadReadPtr((void*)backFunc, 1)) {
+            if (cfg.debug_console) {
+                std::cout << "[Clock Debug] Forcing Back UI..." << std::endl;
+            }
+            backFunc(pThis, nullptr);
+            return;
+        }
+
+        auto closeBtnFunc = (tButtonClicked)p_ClockPageClose.load();
+        if (!closeBtnFunc || IsBadReadPtr((void*)closeBtnFunc, 1)) {
+            return;
+        }
+        if (cfg.debug_console) {
+            std::cout << "[Clock Debug] Forcing Close UI..." << std::endl;
+        }
+
+        closeBtnFunc(pThis);
+    }
+}
+
+void WINAPI hk_ClockPageOk(void* pThis) {
+    auto orig = (tButtonClicked)o_ClockPageOk.load();
+
+    if (!pThis || IsBadReadPtr(pThis, sizeof(void*))) {
+        if (orig && IsValidCodePtr(orig)) {
+            __try { orig(pThis); } __except (EXCEPTION_EXECUTE_HANDLER) {}
+        }
+        return;
+    }
+
+    bool handled = false;
+
+    __try {
+        ClockPageOk_SafeLogic(pThis, handled);
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        handled = false;
+    }
+
+    if (!handled && orig && IsValidCodePtr(orig)) {
+        __try {
+            orig(pThis);
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+        }
+    }
+}
+
 int32_t WINAPI hk_GetFrameCount() {
     UpdateTitleWatermark();
 
@@ -236,24 +302,13 @@ static bool CheckCanUseShortcut() {
     return true;
 }
 
-static void UpdateFreeCamPhysics_Safe() {
-    __try {
-        UpdateFreeCamPhysics();
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        FreeCamState::isActive = false;
-    }
-}
-
 int32_t WINAPI hk_ChangeFov(void* __this, float value) {
     if (!g_GameUpdateInit.load()) g_GameUpdateInit.store(true);
 
-    CustomUIDFeature::UpdateUIDColor();
     auto& cfg = Config::Get();
 
     static int frameCounter = 0;
     frameCounter++;
-
-    UpdateFreeCamPhysics_Safe();
 
     if (frameCounter >= 100) {
         frameCounter = 0;
@@ -441,52 +496,11 @@ bool Hooks::Init() {
         std::cout << "   -> [ERR] EventCamera not found.\n";
     }
 
-    std::cout << "[SCAN] Resolving InnerDispatcher via offset..." << std::endl;
+    std::cout << "[SCAN] Initializing Cooking & Expedition via pattern scanning..." << std::endl;
 
-    void* pInnerDisp = nullptr;
-    {
-        HMODULE hMod = GetModuleHandle(NULL);
-        uintptr_t offsetInnerDispatcher = StringToAddr(Offsets::InnerDispatcherOffset);
-        if (hMod && offsetInnerDispatcher) {
-            pInnerDisp = (void*)((uintptr_t)hMod + offsetInnerDispatcher);
-            LogOffset("Helper.InnerDispatcher", pInnerDisp, pInnerDisp);
-            std::cout << "[SCAN] InnerDispatcher resolved via offset: 0x"
-                      << std::hex << std::uppercase << offsetInnerDispatcher
-                      << std::nouppercase << std::dec << std::endl;
-        }
-    }
-
-    if (pInnerDisp) {
-        HelperAddr::InnerDispatcher = (uintptr_t)pInnerDisp;
-        std::cout << "[SCAN] Resolving handlers via signature hashes..." << std::endl;
-
-        HelperAddr::CookHandler = FindHandlerByHash(HelperAddr::InnerDispatcher, CookingHash);
-        HelperAddr::ExpHandler  = FindExpeditionHandler(HelperAddr::InnerDispatcher, ExpeditionHash);
-
-        std::cout << "   -> CookHandler resolved at: 0x" << std::hex << HelperAddr::CookHandler << std::dec << std::endl;
-        std::cout << "   -> ExpHandler resolved at: 0x" << std::hex << HelperAddr::ExpHandler << std::dec << std::endl;
-    } else {
-        std::cout << "[ERR] Fatal: InnerDispatcherOffset is missing or invalid." << std::endl;
-    }
-
-    if (HelperAddr::CookHandler) {
-        g_CookReady = ResolveCookingPatches();
-        if (g_CookReady) {
-            std::cout << "[SCAN] Cooking memory patches resolved successfully." << std::endl;
-        } else {
-            std::cout << "[ERR] Cooking memory patches resolution failed." << std::endl;
-        }
-    }
-
+    InitCooking();
+    InitExpedition();
     InitExpHandlerPrologueSafe();
-
-    if (HelperAddr::CookShowPage) {
-        if (MH_CreateHook((void*)HelperAddr::CookShowPage, (void*)hk_CookShowPage, (void**)&g_oCookShowPage) == MH_OK) {
-            std::cout << "[SCAN] CookShowPage Hook Ready." << std::endl;
-        } else {
-            std::cout << "[ERR] CookShowPage Hook Failed." << std::endl;
-        }
-    }
 
     DWORD oldProtect;
     VirtualProtect(p_CheckCanOpenMap.load(), 5, PAGE_EXECUTE_READWRITE, &oldProtect);
@@ -578,65 +592,6 @@ bool Hooks::Init() {
         }
     }
 
-    {
-        HMODULE hMod = GetModuleHandle(NULL);
-        if (hMod) {
-            uintptr_t base = (uintptr_t)hMod;
-
-            uintptr_t offsetGetMain  = StringToAddr(Offsets::GetMainCameraOffset);
-            uintptr_t offsetGetTrans = StringToAddr(Offsets::GetTransformOffset);
-            uintptr_t offsetSetPos   = StringToAddr(Offsets::SetPosOffset);
-
-            uintptr_t addr_GetMain = ResolveAddress(base + offsetGetMain);
-            uintptr_t addr_GetTrans = ResolveAddress(base + offsetGetTrans);
-            uintptr_t addr_SetPos = ResolveAddress(base + offsetSetPos);
-
-            call_GetMainCamera = (tGetMainCamera)addr_GetMain;
-            call_GetTransform = (tGetTransform)addr_GetTrans;
-
-            if (Config::Get().enable_free_cam) {
-                std::cout << "[Camera] Initializing Free Camera Hooks..." << '\n';
-
-                if (addr_SetPos) {
-                    if (MH_CreateHook((void*)addr_SetPos, (void*)hk_SetPos, (void**)&o_SetPos) == MH_OK) {
-                        std::cout << "   -> FreeCam SetPos Hook Ready." << '\n';
-                    } else {
-                        std::cout << "   -> [ERR] FreeCam SetPos Hook Failed." << '\n';
-                    }
-                } else {
-                    std::cout << "   -> [ERR] FreeCam Address Invalid." << '\n';
-                }
-            }
-        }
-    }
-
-    if (Config::Get().enable_custom_uid) {
-        std::cout << "[SCAN] Hooking Custom UID UI Extensions..." << std::endl;
-
-        uintptr_t base = (uintptr_t)GetModuleHandle(NULL);
-
-        uintptr_t setTextOffsetVal = 0;
-        std::stringstream ssSetText; ssSetText << std::hex << Offsets::SetTextOffset; ssSetText >> setTextOffsetVal;
-        if (setTextOffsetVal > 0) {
-            void* targetSetText = (void*)(base + setTextOffsetVal);
-            MH_CreateHook(targetSetText, (void*)CustomUIDFeature::hk_SetText, (void**)&CustomUIDFeature::g_oSetText);
-        }
-
-        uintptr_t setColorOffsetVal = 0;
-        std::stringstream ssSetColor; ssSetColor << std::hex << Offsets::SetColorOffset; ssSetColor >> setColorOffsetVal;
-        if (setColorOffsetVal > 0) {
-            CustomUIDFeature::g_oSetColor = (CustomUIDFeature::SetColor_t)(base + setColorOffsetVal);
-        }
-
-        uintptr_t setFontSizeOffsetVal = 0;
-        std::stringstream ssSetSize; ssSetSize << std::hex << Offsets::SetFontSizeOffset; ssSetSize >> setFontSizeOffsetVal;
-        if (setFontSizeOffsetVal > 0) {
-            CustomUIDFeature::g_oSetFontSize = (CustomUIDFeature::SetFontSize_t)(base + setFontSizeOffsetVal);
-        }
-
-        std::cout << "   -> Custom UID UI Hooks Ready." << std::endl;
-    }
-
     if (Config::Get().enable_rainbow_damage) {
         std::cout << "[SCAN] Hooking Rainbow Damage Colors..." << std::endl;
 
@@ -671,10 +626,6 @@ bool Hooks::Init() {
     if (MH_CreateHookApi(L"ws2_32.dll", "sendto", (void*)hk_sendto, (void**)&o_sendto) == MH_OK) {
         std::cout << "[SCAN] Hook sendto Ready." << '\n';
     }
-
-    RenderScaleFeature::Init();
-
-    CameraTweaks::Init();
 
     UnderwaterMask::Init();
 

@@ -15,7 +15,6 @@ namespace HelperAddr {
     extern uintptr_t InnerDispatcher;
     extern uintptr_t CookHandler;
     extern uintptr_t CookShowPage;
-    extern uintptr_t CookPatchAfterInit;
     extern uintptr_t CookPatchEntity;
     extern uintptr_t CookPatchPathB;
     extern uintptr_t CookPatchBplSkip;
@@ -25,26 +24,36 @@ namespace HelperAddr {
     extern uintptr_t CookPatchNullTgt2;
     extern uintptr_t CookPatchFireWr;
     extern uintptr_t ExpHandler;
+    extern uintptr_t ExpPatchAddr;
 }
 
-typedef __int64 (__fastcall *Fn_CookShowPage)(__int64, __int64);
-typedef bool    (__fastcall *Fn_CookHandler)(__int64, __int64, __int64);
-typedef bool    (__fastcall *Fn_Handler)(__int64, __int64);
+typedef void   (__fastcall *Fn_CookShowPage)(__int64);
+typedef __int64 (__fastcall *Fn_CookHandler)(__int64, __int64);
+typedef bool    (__fastcall *Fn_ExpHandler)(void*, void*);
 
 extern Fn_CookShowPage g_oCookShowPage;
-extern const BYTE CookingHash[4];
-extern const BYTE ExpeditionHash[4];
 extern BYTE g_CookHandlerPrologue[8];
 extern BYTE g_ExpHandlerPrologue[8];
 extern bool g_CookReady;
+extern bool g_ExpReady;
 extern volatile bool g_TrigCook;
 extern volatile bool g_TrigExp;
 extern DWORD g_LastCookTime;
 extern DWORD g_LastExpTime;
 
-uintptr_t FindHandlerByHash(uintptr_t dispBase, const BYTE hash[4]);
-uintptr_t FindExpeditionHandler(uintptr_t dispBase, const BYTE hash[4]);
+uintptr_t FindLocal(uintptr_t from, uintptr_t to, const char* pat);
+
+LONG CALLBACK CookVeh(EXCEPTION_POINTERS* ep);
+LONG CALLBACK ExpVeh(EXCEPTION_POINTERS* ep);
+
 bool ResolveCookingPatches();
-__int64 __fastcall hk_CookShowPage(__int64 a1, __int64 a2);
+bool ResolveExpSites();
+
+void __fastcall hk_CookShowPage(__int64 page);
+
 void DoCookingLogic();
 void DoExpeditionLogic();
+
+void InitCooking();
+void InitExpedition();
+void InitExpHandlerPrologueSafe();

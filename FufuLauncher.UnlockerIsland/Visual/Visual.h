@@ -1,6 +1,5 @@
 #pragma once
 #include "../Core/SharedState.h"
-#include "../FreeCam/FreeCam.h"
 #include <d3d11.h>
 
 void UpdateOpenMap();

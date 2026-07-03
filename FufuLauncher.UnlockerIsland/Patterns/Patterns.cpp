@@ -12,10 +12,6 @@ namespace Offsets {
     std::string ActorManagerCtorOffset;
     std::string GetGlobalActorOffset;
     std::string AvatarPaimonAppearOffset;
-    std::string GetMainCameraOffset;
-    std::string GetTransformOffset;
-    std::string SetPosOffset;
-    std::string CameraGetC2WOffset;
     std::string GetComponent;
     std::string GetText;
     std::string ClockPageOkOffset;
@@ -26,9 +22,6 @@ namespace Offsets {
     std::string TouchInputOffset;
     std::string InnerDispatcherOffset;
     std::string EventCameraOffset;
-    std::string SetTextOffset;
-    std::string SetColorOffset;
-    std::string SetFontSizeOffset;
     std::string DamageColorAOffset;
     std::string DamageColorBOffset;
     std::string DamageColor1Offset;
@@ -83,10 +76,6 @@ namespace Offsets {
             ActorManagerCtorOffset = Patterns::OS::ActorManagerCtorOffset;
             GetGlobalActorOffset = Patterns::OS::GetGlobalActorOffset;
             AvatarPaimonAppearOffset = Patterns::OS::AvatarPaimonAppearOffset;
-            GetMainCameraOffset = Patterns::OS::GetMainCameraOffset;
-            GetTransformOffset = Patterns::OS::GetTransformOffset;
-            SetPosOffset = Patterns::OS::SetPosOffset;
-            CameraGetC2WOffset = Patterns::OS::CameraGetC2WOffset;
             GetComponent = Patterns::OS::GetComponent;
             GetText = Patterns::OS::GetText;
             ClockPageOkOffset = Patterns::OS::ClockPageOkOffset;
@@ -97,8 +86,6 @@ namespace Offsets {
             TouchInputOffset = Patterns::OS::TouchInputOffset;
             InnerDispatcherOffset = Patterns::OS::InnerDispatcherOffset;
             EventCameraOffset = Patterns::OS::EventCameraOffset;
-            SetTextOffset = Patterns::OS::SetText;
-            SetColorOffset = Patterns::OS::SetColor;
             DamageColorAOffset = Patterns::OS::DamageColorA;
             DamageColorBOffset = Patterns::OS::DamageColorB;
             DamageColor1Offset = Patterns::OS::DamageColor1;
@@ -111,10 +98,6 @@ namespace Offsets {
             ActorManagerCtorOffset = Patterns::CN::ActorManagerCtorOffset;
             GetGlobalActorOffset = Patterns::CN::GetGlobalActorOffset;
             AvatarPaimonAppearOffset = Patterns::CN::AvatarPaimonAppearOffset;
-            GetMainCameraOffset = Patterns::CN::GetMainCameraOffset;
-            GetTransformOffset = Patterns::CN::GetTransformOffset;
-            SetPosOffset = Patterns::CN::SetPosOffset;
-            CameraGetC2WOffset = Patterns::CN::CameraGetC2WOffset;
             GetComponent = Patterns::CN::GetComponent;
             GetText = Patterns::CN::GetText;
             ClockPageOkOffset = Patterns::CN::ClockPageOkOffset;
@@ -125,8 +108,6 @@ namespace Offsets {
             TouchInputOffset = Patterns::CN::TouchInputOffset;
             InnerDispatcherOffset = Patterns::CN::InnerDispatcherOffset;
             EventCameraOffset = Patterns::CN::EventCameraOffset;
-            SetTextOffset = Patterns::CN::SetText;
-            SetColorOffset = Patterns::CN::SetColor;
             DamageColorAOffset = Patterns::CN::DamageColorA;
             DamageColorBOffset = Patterns::CN::DamageColorB;
             DamageColor1Offset = Patterns::CN::DamageColor1;
@@ -152,10 +133,6 @@ namespace Offsets {
                 ActorManagerCtorOffset = ParseOffsetFromJson(jsonContent, region, "ActorManagerCtorOffset", ActorManagerCtorOffset);
                 GetGlobalActorOffset = ParseOffsetFromJson(jsonContent, region, "GetGlobalActorOffset", GetGlobalActorOffset);
                 AvatarPaimonAppearOffset = ParseOffsetFromJson(jsonContent, region, "AvatarPaimonAppearOffset", AvatarPaimonAppearOffset);
-                GetMainCameraOffset = ParseOffsetFromJson(jsonContent, region, "GetMainCameraOffset", GetMainCameraOffset);
-                GetTransformOffset = ParseOffsetFromJson(jsonContent, region, "GetTransformOffset", GetTransformOffset);
-                SetPosOffset = ParseOffsetFromJson(jsonContent, region, "SetPosOffset", SetPosOffset);
-                CameraGetC2WOffset = ParseOffsetFromJson(jsonContent, region, "CameraGetC2WOffset", CameraGetC2WOffset);
                 GetComponent = ParseOffsetFromJson(jsonContent, region, "GetComponent", GetComponent);
                 GetText = ParseOffsetFromJson(jsonContent, region, "GetText", GetText);
                 ClockPageOkOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageOkOffset", ClockPageOkOffset);
@@ -166,8 +143,6 @@ namespace Offsets {
                 TouchInputOffset = ParseOffsetFromJson(jsonContent, region, "TouchInput", TouchInputOffset);
                 InnerDispatcherOffset = ParseOffsetFromJson(jsonContent, region, "InnerDispatcherOffset", InnerDispatcherOffset);
                 EventCameraOffset = ParseOffsetFromJson(jsonContent, region, "EventCamera", EventCameraOffset);
-                SetTextOffset = ParseOffsetFromJson(jsonContent, region, "SetTextOffset", SetTextOffset);
-                SetColorOffset = ParseOffsetFromJson(jsonContent, region, "SetColorOffset", SetColorOffset);
                 DamageColorAOffset = ParseOffsetFromJson(jsonContent, region, "DamageColorAOffset", DamageColorAOffset);
                 DamageColorBOffset = ParseOffsetFromJson(jsonContent, region, "DamageColorBOffset", DamageColorBOffset);
                 DamageColor1Offset = ParseOffsetFromJson(jsonContent, region, "DamageColor1Offset", DamageColor1Offset);

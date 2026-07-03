@@ -141,23 +141,6 @@ namespace Config {
         g_Config.display_paimon_v1 = ReadInt("DisplayPaimonV1", 0, file);
         g_Config.display_paimon_v2 = ReadInt("DisplayPaimonV2", 0, file);
         
-        g_Config.enable_free_cam = ReadInt("EnableFreeCam", 0, file);
-        
-        g_Config.free_cam_key = ReadInt("FreeCamKey", VK_F5, file);
-        
-        g_Config.free_cam_reset_key = ReadInt("FreeCamResetKey", VK_F7, file);
-
-        g_Config.free_cam_forward = ReadInt("FreeCamForward", VK_UP, file);
-        g_Config.free_cam_backward = ReadInt("FreeCamBackward", VK_DOWN, file);
-        g_Config.free_cam_left = ReadInt("FreeCamLeft", VK_LEFT, file);
-        g_Config.free_cam_right = ReadInt("FreeCamRight", VK_RIGHT, file);
-        g_Config.free_cam_up = ReadInt("FreeCamUp", VK_SPACE, file);
-        g_Config.free_cam_down = ReadInt("FreeCamDown", VK_SUBTRACT, file);
-        g_Config.free_cam_speed_up = ReadInt("FreeCamSpeedUp", VK_SHIFT, file);
-        g_Config.free_cam_speed_down = ReadInt("FreeCamSpeedDown", VK_CONTROL, file);
-
-        g_Config.enable_free_cam_movement_fix = ReadInt("EnableFreeCamMovementFix", 1, file);
-
         g_Config.hide_grass = ReadInt("HideGrass", 0, file);
 
         g_Config.hide_grass_indiscriminate = ReadInt("HideGrassIndiscriminate", 0, file);
@@ -176,46 +159,9 @@ namespace Config {
         g_Config.auto_cook_key = ReadInt("AutoCookKey", VK_F10, file);
         g_Config.auto_expedition_key = ReadInt("AutoExpeditionKey", VK_F9, file);
 
-        g_Config.enable_custom_uid = ReadInt("EnableCustomUID", 0, file);
-        
-        char uidBuf[32] = {};
-        ReadString("CustomUIDStr", "999999999", uidBuf, sizeof(uidBuf), file);
-        g_Config.custom_uid_str = uidBuf;
-        
-        g_Config.enable_custom_uid_color = ReadInt("EnableCustomUIDColor", 0, file);
-        g_Config.custom_uid_color_r = ReadFloat("CustomUIDColorR", 1.0f, file);
-        g_Config.custom_uid_color_g = ReadFloat("CustomUIDColorG", 1.0f, file);
-        g_Config.custom_uid_color_b = ReadFloat("CustomUIDColorB", 1.0f, file);
-        g_Config.custom_uid_color_a = ReadFloat("CustomUIDColorA", 1.0f, file);
-
-        g_Config.enable_rainbow_uid = ReadInt("EnableRainbowUID", 0, file);
-        g_Config.rainbow_uid_speed = ReadFloat("RainbowUIDSpeed", 5.0f, file);
-
-        char _gc[16];
-        ReadString("GradientColor0", "EF9393", _gc, 16, file); g_Config.gradient_color_0 = (unsigned int)strtoul(_gc, nullptr, 16);
-        ReadString("GradientColor1", "E17DC2", _gc, 16, file); g_Config.gradient_color_1 = (unsigned int)strtoul(_gc, nullptr, 16);
-        ReadString("GradientColor2", "998EE0", _gc, 16, file); g_Config.gradient_color_2 = (unsigned int)strtoul(_gc, nullptr, 16);
-        ReadString("GradientColor3", "43ADD0", _gc, 16, file); g_Config.gradient_color_3 = (unsigned int)strtoul(_gc, nullptr, 16);
-        ReadString("GradientColor4", "8BDEDA", _gc, 16, file); g_Config.gradient_color_4 = (unsigned int)strtoul(_gc, nullptr, 16);
-
-        g_Config.enable_rainbow_uid = ReadInt("EnableRainbowUID", 0, file);
-        g_Config.rainbow_uid_speed = ReadFloat("RainbowUIDSpeed", 5.0f, file);
-
-        ReadString("GradientColor0", "EF9393", _gc, 16, file); g_Config.gradient_color_0 = (unsigned int)strtoul(_gc, nullptr, 16);
-        ReadString("GradientColor1", "E17DC2", _gc, 16, file); g_Config.gradient_color_1 = (unsigned int)strtoul(_gc, nullptr, 16);
-        ReadString("GradientColor2", "998EE0", _gc, 16, file); g_Config.gradient_color_2 = (unsigned int)strtoul(_gc, nullptr, 16);
-        ReadString("GradientColor3", "43ADD0", _gc, 16, file); g_Config.gradient_color_3 = (unsigned int)strtoul(_gc, nullptr, 16);
-        ReadString("GradientColor4", "8BDEDA", _gc, 16, file); g_Config.gradient_color_4 = (unsigned int)strtoul(_gc, nullptr, 16);
-
         g_Config.enable_rainbow_damage = ReadInt("EnableRainbowDamage", 0, file);
         g_Config.rainbow_damage_mode = ReadInt("RainbowDamageMode", 0, file);
         g_Config.rainbow_fixed_color_idx = ReadInt("RainbowFixedColorIdx", 0, file);
-
-        g_Config.enable_render_scale = ReadInt("EnableRenderScale", 0, file);
-        g_Config.render_scale_value = ReadFloat("RenderScaleValue", 0.01f, file);
-
-        g_Config.disable_camera_smooth = ReadInt("DisableCameraSmooth", 0, file);
-        g_Config.disable_camera_blend = ReadInt("DisableCameraBlend", 0, file);
 
         g_Config.disable_underwater_mask = ReadInt("DisableUnderwaterMask", 0, file);
     }

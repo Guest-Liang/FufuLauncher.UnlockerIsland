@@ -416,11 +416,3 @@ void __fastcall hk_SetupResinList(void* pThis) {
     }
 }
 
-void InitExpHandlerPrologueSafe() {
-    if (!HelperAddr::ExpHandler) return;
-    __try {
-        memcpy(g_ExpHandlerPrologue, (void*)HelperAddr::ExpHandler, 8);
-    } __except(EXCEPTION_EXECUTE_HANDLER) {
-        HelperAddr::ExpHandler = 0;
-    }
-}
