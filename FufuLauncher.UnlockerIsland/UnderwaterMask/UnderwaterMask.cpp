@@ -6,6 +6,7 @@
 #include "../Patterns/Patterns.h"
 #include "../Scanner/Scanner.h"
 
+#include <atomic>
 #include <cstdint>
 #include <iostream>
 
@@ -15,14 +16,31 @@ namespace UnderwaterMask {
         using ClearFunction = void(__fastcall*)(void*);
 
         constexpr uintptr_t ClearSearchWindow = 0x8000;
+        constexpr int MaxExceptionCount = 3;
 
         MaskFunction g_origPre = nullptr;
         MaskFunction g_origMain = nullptr;
         MaskFunction g_origPost = nullptr;
         ClearFunction g_clearMask = nullptr;
 
+        std::atomic<int> g_exceptionCount{ 0 };
+        std::atomic<bool> g_forceFallback{ false };
+
         bool IsDisabled() {
+            if (g_forceFallback.load(std::memory_order_relaxed)) {
+                return false;
+            }
             return Config::Get().disable_underwater_mask;
+        }
+
+        void OnException(const char* stage) {
+            int count = g_exceptionCount.fetch_add(1, std::memory_order_relaxed) + 1;
+            std::cout << "[ERR] UnderwaterMask exception in " << stage
+                      << " (count: " << count << "/" << MaxExceptionCount << ")" << std::endl;
+            if (count >= MaxExceptionCount) {
+                g_forceFallback.store(true, std::memory_order_relaxed);
+                std::cout << "[WARN] UnderwaterMask disabled due to repeated exceptions, falling back to original." << std::endl;
+            }
         }
 
         void InvokeClearMask(void* thisPtr) {
@@ -34,31 +52,47 @@ namespace UnderwaterMask {
                 g_clearMask(thisPtr);
             }
             __except (EXCEPTION_EXECUTE_HANDLER) {
+                OnException("ClearMask");
             }
         }
 
-        std::int64_t InvokeOrClear(MaskFunction original, void* thisPtr, double deltaTime) {
-            if (!IsDisabled()) {
-                if (original) {
-                    return original(thisPtr, deltaTime);
-                }
+        std::int64_t InvokeOriginal(MaskFunction original, void* thisPtr, double deltaTime) {
+            if (!original) {
                 return 0;
             }
+            __try {
+                return original(thisPtr, deltaTime);
+            }
+            __except (EXCEPTION_EXECUTE_HANDLER) {
+                return 0;
+            }
+        }
 
-            InvokeClearMask(thisPtr);
-            return 0;
+        std::int64_t InvokeOrClear(MaskFunction original, void* thisPtr, double deltaTime, const char* stage) {
+            if (!IsDisabled()) {
+                return InvokeOriginal(original, thisPtr, deltaTime);
+            }
+
+            __try {
+                InvokeClearMask(thisPtr);
+                return 0;
+            }
+            __except (EXCEPTION_EXECUTE_HANDLER) {
+                OnException(stage);
+                return InvokeOriginal(original, thisPtr, deltaTime);
+            }
         }
 
         std::int64_t __fastcall HookPre(void* thisPtr, double deltaTime) {
-            return InvokeOrClear(g_origPre, thisPtr, deltaTime);
+            return InvokeOrClear(g_origPre, thisPtr, deltaTime, "Pre");
         }
 
         std::int64_t __fastcall HookMain(void* thisPtr, double deltaTime) {
-            return InvokeOrClear(g_origMain, thisPtr, deltaTime);
+            return InvokeOrClear(g_origMain, thisPtr, deltaTime, "Main");
         }
 
         std::int64_t __fastcall HookPost(void* thisPtr, double deltaTime) {
-            return InvokeOrClear(g_origPost, thisPtr, deltaTime);
+            return InvokeOrClear(g_origPost, thisPtr, deltaTime, "Post");
         }
 
         void* ScanDirect(const char* name, const char* pattern) {

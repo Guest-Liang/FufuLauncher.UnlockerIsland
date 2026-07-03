@@ -1,5 +1,8 @@
 #include "RainbowDamage.h"
 
+#include <atomic>
+#include <iostream>
+
 namespace RainbowDamageFeature {
     static Color g_palette[] = {
         {0.2f, 0.9f, 0.1f, 1.0f},
@@ -14,12 +17,26 @@ namespace RainbowDamageFeature {
     static constexpr int PALETTE_COUNT = sizeof(g_palette) / sizeof(Color);
     static volatile int g_colorIdx = 0;
 
+    static constexpr int MaxExceptionCount = 3;
+    static std::atomic<int> g_exceptionCount{ 0 };
+    static std::atomic<bool> g_forceFallback{ false };
+
     FnGetColorList g_oGetColorA = nullptr;
     FnGetColorArr  g_oGetColorB = nullptr;
     FnGetColorIdx  g_oGetColor1 = nullptr;
     FnGetColorIdx  g_oGetColor2 = nullptr;
     FnGetColorIdx  g_oGetColor3 = nullptr;
     FnGetColorIdx  g_oGetColor4 = nullptr;
+
+    static void OnException(const char* stage) {
+        int count = g_exceptionCount.fetch_add(1, std::memory_order_relaxed) + 1;
+        std::cout << "[ERR] RainbowDamage exception in " << stage
+                  << " (count: " << count << "/" << MaxExceptionCount << ")" << std::endl;
+        if (count >= MaxExceptionCount) {
+            g_forceFallback.store(true, std::memory_order_relaxed);
+            std::cout << "[WARN] RainbowDamage disabled due to repeated exceptions, falling back to original." << std::endl;
+        }
+    }
 
     static Color GetTargetColor() {
         if (Config::Get().rainbow_damage_mode == 1) {
@@ -30,26 +47,64 @@ namespace RainbowDamageFeature {
     }
 
     void __fastcall HookGetColorA(Color* ret, void* self, void* list, int idx, void* method) {
-        g_oGetColorA(ret, self, list, idx, method);
-        *ret = GetTargetColor();
+        __try {
+            g_oGetColorA(ret, self, list, idx, method);
+            if (!g_forceFallback.load(std::memory_order_relaxed)) {
+                *ret = GetTargetColor();
+            }
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+            OnException("ColorA");
+        }
     }
     void __fastcall HookGetColorB(Color* ret, void* self, void* arr, int idx, void* method) {
-        g_oGetColorB(ret, self, arr, idx, method);
-        *ret = GetTargetColor();
+        __try {
+            g_oGetColorB(ret, self, arr, idx, method);
+            if (!g_forceFallback.load(std::memory_order_relaxed)) {
+                *ret = GetTargetColor();
+            }
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+            OnException("ColorB");
+        }
     }
     void __fastcall HookGetColor1(Color* ret, void* self, int idx, void* method) {
-        g_oGetColor1(ret, self, idx, method);
-        *ret = GetTargetColor();
+        __try {
+            g_oGetColor1(ret, self, idx, method);
+            if (!g_forceFallback.load(std::memory_order_relaxed)) {
+                *ret = GetTargetColor();
+            }
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+            OnException("Color1");
+        }
     }
     void __fastcall HookGetColor2(Color* ret, void* self, int idx, void* method) {
-        g_oGetColor2(ret, self, idx, method);
+        __try {
+            g_oGetColor2(ret, self, idx, method);
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+            OnException("Color2");
+        }
     }
     void __fastcall HookGetColor3(Color* ret, void* self, int idx, void* method) {
-        g_oGetColor3(ret, self, idx, method);
-        *ret = GetTargetColor();
+        __try {
+            g_oGetColor3(ret, self, idx, method);
+            if (!g_forceFallback.load(std::memory_order_relaxed)) {
+                *ret = GetTargetColor();
+            }
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+            OnException("Color3");
+        }
     }
     void __fastcall HookGetColor4(Color* ret, void* self, int idx, void* method) {
-        g_oGetColor4(ret, self, idx, method);
+        __try {
+            g_oGetColor4(ret, self, idx, method);
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+            OnException("Color4");
+        }
     }
 
     DWORD WINAPI ColorCycleThread(LPVOID) {
