@@ -32,6 +32,7 @@ std::wstring GetCurrentExeDirectory() {
     return L".";
 }
 
+
 std::wstring GetLogFilePath() {
     return GetCurrentExeDirectory() + L"\\Launcher.log";
 }
