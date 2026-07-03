@@ -149,6 +149,16 @@ void InjectPlugins(HANDLE hProcess) {
         WriteLog("创建 Plugins 目录: " + WStringToString(pluginsDir));
     }
 
+    std::wstring offsetJsonPath = pluginsDir + L"\\offset.json";
+    if (GetFileAttributesW(offsetJsonPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+        WriteLog("监测到历史下载文件 offset.json，正在执行移除...");
+        if (DeleteFileW(offsetJsonPath.c_str())) {
+            WriteLog("历史文件 offset.json 移除成功");
+        } else {
+            WriteLog("警告: 无法移除 offset.json，错误码: " + std::to_string(GetLastError()));
+        }
+    }
+
     WriteLog("正在递归扫描插件目录: " + WStringToString(pluginsDir));
     
     int totalInjected = 0;
