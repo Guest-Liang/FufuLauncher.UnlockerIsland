@@ -25,7 +25,6 @@ namespace Patterns {
     inline constexpr const char* GetName = "40 53 48 81 EC ?? ?? ?? ?? 48 8B D9 48 85 C9 0F 84 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 85 C0 0F 84 ?? ?? ?? ?? 48 8B 10 48 8B C8 FF 52 ?? 48 85 C0 0F 85 ?? ?? ?? ?? 48 8B CB E8 ?? ?? ?? ??";
     inline constexpr const char* SetupResinList = "E8 ?? ?? ?? ?? 84 DB 74 ?? 4C 89 F1 E8 ?? ?? ?? ?? 49 8B 86 ?? ?? ?? ?? 48 85 C0 75 ?? E9 ?? ?? ?? ??";
     inline constexpr const char* GetActive = "E8 ?? ?? ?? ?? 84 C0 74 ?? 48 89 F1 E8 ?? ?? ?? ?? 48 8B 4E ?? 48 85 C9 0F 84 ?? ?? ?? ?? 80 79 ?? ?? 0F 94 C1 08 C1";
-    inline constexpr const char* ActorManagerCtor = "E8 ?? ?? ?? ?? 48 85 F6 0F 84 ?? ?? ?? ?? BF ?? ?? ?? ?? 48 89 F1 48 8B 55 ?? 49 89 D8 E8 ?? ?? ?? ?? EB ??";
     inline constexpr const char* StringNew = "56 48 83 EC 20 48 85 C9 74 ? 48 89 CE E8 ? ? ? ? 48 89 F1 89 C2";
     inline constexpr const char* ShowDialog = "41 57 41 56 56 57 55 53 48 83 EC 28 4D 89 CF 4C 89 C7 48 89 D5 48 89 CB";
     
@@ -42,7 +41,6 @@ namespace Patterns {
     inline constexpr const char* ExpHashCmp    = "81 F9 E1 73 90 69 0F 85";
     inline constexpr const char* ExpTailJmp    = "41 5F E9";
     inline constexpr const char* ExpTestJz     = "84 C0 0F 84";
-    inline constexpr const char* SetUID = "56 57 48 83 EC 28 89 D7 48 89 CE 80 3D ?? ?? ?? ?? 00 0F 84 ?? ?? ?? ?? 80 3D ?? ?? ?? ?? 00 0F 85 ?? ?? ?? ?? 89 BE ?? ?? ?? ?? 48 8B 0D ?? ?? ?? ?? 80 B9 ?? ?? ?? ?? 00 0F 84";
     inline constexpr const char* BuildCmdBuffers = "41 57 41 56 41 55 41 54 56 57 55 53 48 81 EC 48 02 00 00 48 89 CE 0F 57 C0 0F 29 84 24 50 01 00 00 0F 29 84 24 40 01 00 00 0F 29 84 24 30 01 00";
     inline constexpr const char* CameraUpdateView = "56 48 83 EC 40 0F 29 7C 24 30 0F 29 74 24 20 48 89 CE F3 0F 10 71 70 F3 0F 10 79 78 F3 0F 5C F7 F3 0F 59 B1 80 00 00 00 E8 ?";
     inline constexpr const char* CameraStateBlenderTick = "41 57 41 56 41 55 41 54 56 57 55 53 48 81 EC 38 0D 00 00 44 0F 29 84 24 20 0D 00 00";
@@ -59,9 +57,6 @@ namespace Patterns {
 
     namespace CN {
         inline constexpr const char* GetActiveOffset = "";
-        inline constexpr const char* ActorManagerCtorOffset = "";
-        inline constexpr const char* GetGlobalActorOffset = "";
-        inline constexpr const char* AvatarPaimonAppearOffset = "";
         inline constexpr const char* GetComponent = "";
         inline constexpr const char* GetText = "17DF06F0";
         inline constexpr const char* ClockPageOkOffset = "11919E90";
@@ -82,9 +77,6 @@ namespace Patterns {
 
     namespace OS {
         inline constexpr const char* GetActiveOffset = "";
-        inline constexpr const char* ActorManagerCtorOffset = "";
-        inline constexpr const char* GetGlobalActorOffset = "";
-        inline constexpr const char* AvatarPaimonAppearOffset = "";
         inline constexpr const char* GetComponent = "";
         inline constexpr const char* GetText = "17E3EAE0";
         inline constexpr const char* ClockPageOkOffset = "11933430";
@@ -107,9 +99,6 @@ namespace Patterns {
 namespace GameStrings {
     inline constexpr const char* SynthesisPage = "SynthesisPage";
     inline constexpr const char* QuestBannerPath = "Canvas/Pages/InLevelMapPage/GrpMap/GrpPointTips/Layout/QuestBanner";
-    inline constexpr const char* PaimonPath = "/EntityRoot/OtherGadgetRoot/NPC_Guide_Paimon(Clone)";
-    inline constexpr const char* BeydPaimonPath = "/EntityRoot/OtherGadgetRoot/Beyd_NPC_Kanban_Paimon(Clone)";
-    inline constexpr const char* DivePaimonPath = "/EntityRoot/OtherGadgetRoot/NPC_Guide_Paimon_Dive(Clone)";
     inline constexpr const char* ProfileLayerPath = "/Canvas/Pages/PlayerProfilePage";
     inline constexpr const char* UIDPathMain = "/Canvas/Pages/PlayerProfilePage/GrpProfile/Right/GrpPlayerCard/UID";
     inline constexpr const char* UIDPathWatermark = "/BetaWatermarkCanvas(Clone)/Panel/TxtUID";
@@ -117,9 +106,6 @@ namespace GameStrings {
 
 namespace Offsets {
     extern std::string GetActiveOffset;
-    extern std::string ActorManagerCtorOffset;
-    extern std::string GetGlobalActorOffset;
-    extern std::string AvatarPaimonAppearOffset;
     extern std::string GetComponent;
     extern std::string GetText;
     extern std::string ClockPageOkOffset;

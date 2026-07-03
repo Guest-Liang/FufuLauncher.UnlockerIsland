@@ -11,7 +11,6 @@
 #include "../Patterns/Patterns.h"
 #include "../Automation/Automation.h"
 #include "../RainbowDamage/RainbowDamage.h"
-#include "../Paimon/Paimon.h"
 #include "../HideUI/HideUI.h"
 #include "../Network/Network.h"
 #include "../Visual/Visual.h"
@@ -291,8 +290,6 @@ auto WINAPI hk_GameUpdate(__int64 a1, const char* a2) -> __int64 {
 }
 
 static bool CheckCanUseShortcut() {
-    if (CheckResistInBeyd()) return false;
-
     auto checkEnter = (tCheckCanEnter)p_CheckCanEnter.load();
     if (checkEnter) {
         bool canEnter = false;
@@ -315,10 +312,7 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
         UpdateRealUID();
         UpdateHideUID();
         UpdateHideMainUI();
-        HandlePaimon();
-        UpdatePaimonV2();
         UpdateOpenMap();
-        g_ResistInBeyd = CheckResistInBeyd(false);
     }
 
 
@@ -375,9 +369,7 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
 
     if (cfg.enable_fps_override) {
         auto setFps = (tSetFrameCount)o_SetFrameCount.load();
-        if (CheckResistInBeyd()) {
-            SafeInvoke([&]() { setFps(60); });
-        } else if (IsValid(setFps)) SafeInvoke([&]() { setFps(cfg.selected_fps); });
+        if (IsValid(setFps)) SafeInvoke([&]() { setFps(cfg.selected_fps); });
     }
 
     bool pass_check = !cfg.enable_fov_limit_check || (value > 30.0f);
@@ -470,7 +462,6 @@ bool Hooks::Init() {
     HOOK_REL("SetupResinList", Patterns::SetupResinList, hk_SetupResinList, o_SetupResinList);
     SCAN_DIR("StringNew", Patterns::StringNew, p_StringNew);
     SCAN_DIR("ShowDialog", Patterns::ShowDialog, p_ShowDialog);
-    HOOK_DIR("SetUID", Patterns::SetUID, hk_SetUID, o_SetUid);
 
     void* eventCameraAddr = nullptr;
     uintptr_t offsetEventCam = StringToAddr(Offsets::EventCameraOffset);
@@ -509,41 +500,6 @@ bool Hooks::Init() {
         HMODULE hMod = GetModuleHandle(NULL);
         if (hMod) {
             uintptr_t base = (uintptr_t)hMod;
-
-            void* actorMgrCtor = nullptr;
-            uintptr_t offsetCtor = StringToAddr(Offsets::ActorManagerCtorOffset);
-
-            if (offsetCtor > 0) {
-                actorMgrCtor = (void*)(base + offsetCtor);
-                std::cout << "[SCAN] ActorManager.ctor resolved via explicit offset: 0x" << std::hex << offsetCtor << std::dec << '\n';
-            } else {
-                void* actorScan = Scanner::ScanMainMod(Patterns::ActorManagerCtor);
-                if (actorScan) {
-                    actorMgrCtor = Scanner::ResolveRelative(actorScan, 1, 5);
-                    if (actorMgrCtor) std::cout << "[SCAN] ActorManager.ctor resolved via signature fallback\n";
-                }
-            }
-
-            if (actorMgrCtor) {
-                MH_STATUS status1 = MH_CreateHook(actorMgrCtor, (void*)hk_ActorManagerCtor, (void**)&o_ActorManagerCtor);
-                if (status1 == MH_OK) {
-                    std::cout << "[SCAN] ActorManager.ctor hook created.\n";
-                } else {
-                    std::cout << "[ERR] Failed to hook ActorManager.ctor. MH_STATUS: " << status1 << '\n';
-                }
-            }
-
-            uintptr_t offsetGlobal   = StringToAddr(Offsets::GetGlobalActorOffset);
-            void* getGlobalActorAddr = (void*)(base + offsetGlobal);
-            p_GetGlobalActor.store(getGlobalActorAddr);
-            LogOffset("ActorManager.GetGlobalActor", getGlobalActorAddr, getGlobalActorAddr);
-            std::cout << "[SCAN] GetGlobalActor at: 0x" << std::hex << offsetGlobal << std::dec << '\n';
-
-            uintptr_t offsetPaimon   = StringToAddr(Offsets::AvatarPaimonAppearOffset);
-            void* avatarPaimonAppearAddr = (void*)(base + offsetPaimon);
-            p_AvatarPaimonAppear.store(avatarPaimonAppearAddr);
-            LogOffset("GlobalActor.AvatarPaimonAppear", avatarPaimonAppearAddr, avatarPaimonAppearAddr);
-            std::cout << "[SCAN] AvatarPaimonAppear at: 0x" << std::hex << offsetPaimon << std::dec << '\n';
 
             uintptr_t offsetClockOk = StringToAddr(Offsets::ClockPageOkOffset);
             if (offsetClockOk) {

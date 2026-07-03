@@ -55,9 +55,6 @@ struct ModConfig {
 
     bool hide_main_ui = false;
 
-    bool display_paimon_v1 = false;
-    bool display_paimon_v2 = false;
-
     bool hide_grass = false;
 
     bool hide_grass_indiscriminate = false;

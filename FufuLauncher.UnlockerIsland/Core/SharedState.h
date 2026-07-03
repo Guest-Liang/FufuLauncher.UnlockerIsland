@@ -46,14 +46,10 @@ typedef int (WSAAPI* tSend)(SOCKET s, const char* buf, int len, int flags);
 typedef int (WSAAPI* tSendTo)(SOCKET s, const char* buf, int len, int flags, const sockaddr* to, int tolen);
 typedef HRESULT(__stdcall* tPresent1)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters);
 typedef bool (WINAPI *tGetActive)(void*);
-typedef void (WINAPI *tActorManagerCtor)(void*);
-typedef void* (WINAPI *tGetGlobalActor)(void*);
-typedef void (WINAPI *tAvatarPaimonAppear)(void*, void*, bool);
 typedef void* (*tGetComponent)(void*, Il2CppString*);
 typedef Il2CppString* (*tGetText)(void*);
 typedef void (WINAPI *tVoidFunc)(void*);
 typedef Il2CppString* (*tGetName)(void*);
-typedef void (WINAPI *tSetUid)(void*, uint32_t);
 typedef __int64 (*FnStringNew)(const char*);
 typedef void (*FnShowDialog)(__int64, __int64, __int64, __int64, int);
 typedef void (__fastcall *tSetupResinList)(void* pThis);
@@ -84,15 +80,11 @@ extern std::atomic<void*> o_ClockPageOk;
 extern std::atomic<void*> p_ClockPageClose;
 extern std::atomic<void*> p_ClockPageFinish;
 extern std::atomic<void*> p_ClockPageBack;
-extern std::atomic<void*> o_ActorManagerCtor;
-extern std::atomic<void*> p_GetGlobalActor;
-extern std::atomic<void*> p_AvatarPaimonAppear;
 extern std::atomic<void*> p_CheckCanOpenMap;
 extern std::atomic<void*> p_GetName;
 extern std::atomic<void*> o_send;
 extern std::atomic<void*> o_sendto;
 extern std::atomic<void*> p_GetActive;
-extern std::atomic<void*> o_SetUid;
 extern std::atomic<void*> p_StringNew;
 extern std::atomic<void*> p_ShowDialog;
 
@@ -107,11 +99,9 @@ extern ID3D11RenderTargetView* g_mainRenderTargetView;
 extern HWND g_hGameWindow_ImGui;
 extern tResizeBuffers o_ResizeBuffers;
 extern tPresent1 o_Present1;
-extern void* g_ActorManagerInstance;
 extern uint32_t g_CurrentUID;
 
 extern bool g_ShowCoordWindow;
-extern bool g_ResistInBeyd;
 
 extern std::list<std::wstring> GrassPrefix;
 

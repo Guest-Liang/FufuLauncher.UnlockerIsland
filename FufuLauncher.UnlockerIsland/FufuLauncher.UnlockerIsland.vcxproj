@@ -148,7 +148,6 @@
         <ClInclude Include="Patterns\Patterns.h" />
         <ClInclude Include="Automation\Automation.h" />
         <ClInclude Include="RainbowDamage\RainbowDamage.h" />
-        <ClInclude Include="Paimon\Paimon.h" />
         <ClInclude Include="HideUI\HideUI.h" />
         <ClInclude Include="Network\Network.h" />
         <ClInclude Include="UnderwaterMask\UnderwaterMask.h" />
@@ -169,7 +168,6 @@
         <ClCompile Include="Patterns\Patterns.cpp" />
         <ClCompile Include="Automation\Automation.cpp" />
         <ClCompile Include="RainbowDamage\RainbowDamage.cpp" />
-        <ClCompile Include="Paimon\Paimon.cpp" />
         <ClCompile Include="HideUI\HideUI.cpp" />
         <ClCompile Include="Network\Network.cpp" />
         <ClCompile Include="UnderwaterMask\UnderwaterMask.cpp" />

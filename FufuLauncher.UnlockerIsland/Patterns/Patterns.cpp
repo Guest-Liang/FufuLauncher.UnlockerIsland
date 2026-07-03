@@ -9,9 +9,6 @@ std::string GetOwnDllDir();
 
 namespace Offsets {
     std::string GetActiveOffset;
-    std::string ActorManagerCtorOffset;
-    std::string GetGlobalActorOffset;
-    std::string AvatarPaimonAppearOffset;
     std::string GetComponent;
     std::string GetText;
     std::string ClockPageOkOffset;
@@ -73,9 +70,6 @@ namespace Offsets {
     void InitOffsets(bool isOS) {
         if (isOS) {
             GetActiveOffset = Patterns::OS::GetActiveOffset;
-            ActorManagerCtorOffset = Patterns::OS::ActorManagerCtorOffset;
-            GetGlobalActorOffset = Patterns::OS::GetGlobalActorOffset;
-            AvatarPaimonAppearOffset = Patterns::OS::AvatarPaimonAppearOffset;
             GetComponent = Patterns::OS::GetComponent;
             GetText = Patterns::OS::GetText;
             ClockPageOkOffset = Patterns::OS::ClockPageOkOffset;
@@ -95,9 +89,6 @@ namespace Offsets {
             std::cout << "[INFO] Pre-initialized Global (OS) Offsets from hardcode" << std::endl;
         } else {
             GetActiveOffset = Patterns::CN::GetActiveOffset;
-            ActorManagerCtorOffset = Patterns::CN::ActorManagerCtorOffset;
-            GetGlobalActorOffset = Patterns::CN::GetGlobalActorOffset;
-            AvatarPaimonAppearOffset = Patterns::CN::AvatarPaimonAppearOffset;
             GetComponent = Patterns::CN::GetComponent;
             GetText = Patterns::CN::GetText;
             ClockPageOkOffset = Patterns::CN::ClockPageOkOffset;
@@ -130,9 +121,6 @@ namespace Offsets {
                 std::cout << "[INFO] Found offset.json at " << targetJsonPath << ". Attempting to merge..." << std::endl;
 
                 GetActiveOffset = ParseOffsetFromJson(jsonContent, region, "GetActiveOffset", GetActiveOffset);
-                ActorManagerCtorOffset = ParseOffsetFromJson(jsonContent, region, "ActorManagerCtorOffset", ActorManagerCtorOffset);
-                GetGlobalActorOffset = ParseOffsetFromJson(jsonContent, region, "GetGlobalActorOffset", GetGlobalActorOffset);
-                AvatarPaimonAppearOffset = ParseOffsetFromJson(jsonContent, region, "AvatarPaimonAppearOffset", AvatarPaimonAppearOffset);
                 GetComponent = ParseOffsetFromJson(jsonContent, region, "GetComponent", GetComponent);
                 GetText = ParseOffsetFromJson(jsonContent, region, "GetText", GetText);
                 ClockPageOkOffset = ParseOffsetFromJson(jsonContent, region, "ClockPageOkOffset", ClockPageOkOffset);

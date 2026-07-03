@@ -3,7 +3,6 @@
 #include "../Config/Config.h"
 #include "../Core/Utils.h"
 #include "../Automation/Automation.h"
-#include "../Paimon/Paimon.h"
 #include "../il2cpp/Il2CppList.h"
 #include <iostream>
 #include <fstream>
@@ -312,7 +311,7 @@ void WINAPI hk_SetActive(void* pThis, bool active) {
     auto cfg = Config::Get();
     auto getName = (tGetName)p_GetName.load();
 
-    if (cfg.hide_grass && !CheckResistInBeyd() && active && getName) {
+    if (cfg.hide_grass && active && getName) {
         Il2CppString* name = getName(pThis);
         if (name) {
             if (cfg.hide_grass_indiscriminate) {

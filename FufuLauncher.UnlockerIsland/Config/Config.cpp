@@ -138,9 +138,6 @@ namespace Config {
 
         g_Config.hide_main_ui = ReadInt("HideMainUI", 0, file);
 
-        g_Config.display_paimon_v1 = ReadInt("DisplayPaimonV1", 0, file);
-        g_Config.display_paimon_v2 = ReadInt("DisplayPaimonV2", 0, file);
-        
         g_Config.hide_grass = ReadInt("HideGrass", 0, file);
 
         g_Config.hide_grass_indiscriminate = ReadInt("HideGrassIndiscriminate", 0, file);

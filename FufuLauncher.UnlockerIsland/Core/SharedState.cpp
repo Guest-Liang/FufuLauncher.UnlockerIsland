@@ -24,15 +24,11 @@ std::atomic<void*> o_ClockPageOk{ nullptr };
 std::atomic<void*> p_ClockPageClose{ nullptr };
 std::atomic<void*> p_ClockPageFinish{ nullptr };
 std::atomic<void*> p_ClockPageBack{ nullptr };
-std::atomic<void*> o_ActorManagerCtor{ nullptr };
-std::atomic<void*> p_GetGlobalActor{ nullptr };
-std::atomic<void*> p_AvatarPaimonAppear{ nullptr };
 std::atomic<void*> p_CheckCanOpenMap{ nullptr };
 std::atomic<void*> p_GetName{ nullptr };
 std::atomic<void*> o_send{ nullptr };
 std::atomic<void*> o_sendto{ nullptr };
 std::atomic<void*> p_GetActive{ nullptr };
-std::atomic<void*> o_SetUid{ nullptr };
 std::atomic<void*> p_StringNew{ nullptr };
 std::atomic<void*> p_ShowDialog{ nullptr };
 
@@ -47,11 +43,9 @@ ID3D11RenderTargetView* g_mainRenderTargetView = nullptr;
 HWND g_hGameWindow_ImGui = nullptr;
 tResizeBuffers o_ResizeBuffers = nullptr;
 tPresent1 o_Present1 = nullptr;
-void* g_ActorManagerInstance = nullptr;
 uint32_t g_CurrentUID = 0;
 
 bool g_ShowCoordWindow = false;
-bool g_ResistInBeyd = false;
 
 std::list<std::wstring> GrassPrefix {
     L"Area_Ndkl_",
