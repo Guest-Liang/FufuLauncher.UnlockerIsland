@@ -104,8 +104,8 @@ extern bool g_ShowCoordWindow;
 extern std::list<std::wstring> GrassPrefix;
 
 struct SafeFogBuffer {
-    __declspec(align(16)) uint8_t data[64];
-    uint8_t padding[192];
+    __declspec(align(16)) uint8_t data[404];
+    uint8_t padding[16];
 };
 
 extern std::atomic<bool> g_ShouldShowDialog;

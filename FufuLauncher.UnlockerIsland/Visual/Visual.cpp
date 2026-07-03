@@ -336,8 +336,7 @@ static SafeFogBuffer g_fogBuf = { 0 };
 
 auto hk_DisplayFog(__int64 a1, __int64 a2) -> __int64 {
     if (Config::Get().disable_fog && a2) {
-        memset(&g_fogBuf, 0, sizeof(g_fogBuf));
-        memcpy(g_fogBuf.data, (void*)a2, 64);
+        memcpy(g_fogBuf.data, (void*)a2, 404);
         g_fogBuf.data[0] = 0;
         auto orig = (tDisplayFog)o_DisplayFog.load();
         if (orig) return orig(a1, reinterpret_cast<__int64>(g_fogBuf.data));
