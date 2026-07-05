@@ -10,7 +10,7 @@ namespace Patterns {
     inline constexpr const char* FindGameObject = "40 53 48 83 EC ? 48 89 4C 24 ? 48 8D 54 24 ? 48 8D 4C 24 ? E8 ? ? ? ? 48 8B 08 48 85 C9 75 ? 48 8D 48 ? E8 ? ? ? ? 48 8B 4C 24 ? 48 8B D8 48 85 C9 74 ? 48 83 7C 24 ? 00 76";
     inline constexpr const char* SetActive = "E8 ? ? ? ? 48 8B 56 ? 48 85 D2 0F 84 ? ? ? ? 80 3D ? ? ? ? 0 0F 85 ? ? ? ? 48 89 D1 E8 ? ? ? ? 48 85 C0 0F 84 ? ? ? ? 48 89 C1";
     inline constexpr const char* DamageText = "41 57 41 56 41 55 41 54 56 57 55 53 48 81 EC D8 01 00 00 44 0F 29 AC 24 ? ? ? ? 44 0F 29 A4 24 ? ? ? ? 44 0F 29 9C 24 ? ? ? ? 44 0F 29 94 24 ? ? ? ? 44 0F 29 8C 24 ? ? ? ? 44 0F 29 84 24 ? ? ? ? 0F 29 BC 24 ? ? ? ? 0F 29 B4 24 ? ? ? ? 44 89 CF 45 89 C4 89 D5";
-    inline constexpr const char* EventCamera = "41 57 41 56 56 57 55 53 48 83 EC 48 48 89 D7 49 89 CE 80 3D ?? ?? ?? ?? 00 0F 85 ?? ?? ?? ?? 80 3D ?? ?? ?? ?? 00 0F 85 ?? ?? ?? ?? 49 8B 96 ?? 0C 00 00";
+    inline constexpr const char* EventCamera = "41 57 41 56 56 57 55 53 48 83 EC 48 48 89 D7 49 89 CE 80 3D ?? ?? ?? ?? 00 0F 85 ?? ?? ?? ?? 80";
     inline constexpr const char* FindString = "56 48 83 ec 20 48 89 ce e8 ? ? ? ? 48 89 f1 89 c2 48 83 c4 20 5e e9 ? ? ? ? cc cc cc cc";
     inline constexpr const char* CraftPartner = "41 57 41 56 41 55 41 54 56 57 55 53 48 81 EC ? ? ? ? 4D 89 ? 4C 89 C6 49 89 D4 49 89 CE";
     inline constexpr const char* CraftEntry = "41 56 56 57 53 48 83 EC 58 49 89 CE 80 3D ? ? ? ? 00 0F 84 ? ? ? ? 80 3D ? ? ? ? 00 48 8B 0D ? ? ? ? 0F 85";
@@ -75,7 +75,7 @@ namespace Patterns {
         inline constexpr const char* ClockPageBackOffset = "11930990";
         inline constexpr const char* TouchInputOffset = "8CEAB90";
         inline constexpr const char* InnerDispatcherOffset = "105CAE70";
-        inline constexpr const char* EventCameraOffset = "0xDEEA1B0";
+        inline constexpr const char* EventCameraOffset = "";
         inline constexpr const char* DamageColorA = "12442850";
         inline constexpr const char* DamageColorB = "12442960";
         inline constexpr const char* DamageColor1 = "124426D0";
