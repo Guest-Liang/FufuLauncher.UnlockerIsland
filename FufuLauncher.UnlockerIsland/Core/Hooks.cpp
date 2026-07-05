@@ -166,7 +166,6 @@ void UpdateRealUID() {
     });
 }
 
-// Moved from FreeCam.cpp - clock speedup feature
 static void ClockPageOk_SafeLogic(void* pThis, bool& out_handled) {
     out_handled = false;
     auto& cfg = Config::Get();
@@ -396,7 +395,6 @@ bool Hooks::Init() {
     std::string path(szFileName);
     std::transform(path.begin(), path.end(), path.begin(), ::tolower);
     bool isOS = (path.find("genshinimpact.exe") != std::string::npos);
-    Offsets::InitOffsets(isOS);
 
     void* getActiveAddr = nullptr;
     void* activeScan = Scanner::ScanMainMod(Patterns::GetActive);
