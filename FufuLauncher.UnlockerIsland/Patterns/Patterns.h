@@ -75,7 +75,7 @@ namespace Patterns {
         inline constexpr const char* ClockPageBackOffset = "11930990";
         inline constexpr const char* TouchInputOffset = "8CEAB90";
         inline constexpr const char* InnerDispatcherOffset = "105CAE70";
-        inline constexpr const char* EventCameraOffset = "0x9DEA1B0";
+        inline constexpr const char* EventCameraOffset = "0xDEEA1B0";
         inline constexpr const char* DamageColorA = "12442850";
         inline constexpr const char* DamageColorB = "12442960";
         inline constexpr const char* DamageColor1 = "124426D0";
