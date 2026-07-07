@@ -49,6 +49,12 @@ namespace Config {
         WritePrivateProfileStringA(section, "Value", buf, file);
     }
     
+    void WriteInt(LPCSTR section, int value, LPCSTR file) {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%d", value);
+        WritePrivateProfileStringA(section, "Value", buf, file);
+    }
+    
     std::string GetConfigPath() {
         char path[MAX_PATH];
         HMODULE hm = NULL;
@@ -90,6 +96,11 @@ namespace Config {
         g_Config.enable_fps_override = ReadInt("FpsUnlock", 0, file);
         
         g_Config.selected_fps = ReadInt("TargetFps", 60, file);
+        
+        if (g_Config.selected_fps > 100000) {
+            g_Config.selected_fps = 100000;
+            WriteInt("TargetFps", 100000, file);
+        }
         
         g_Config.enable_vsync_override = ReadInt("VSync", 1, file);
         
