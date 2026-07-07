@@ -30,6 +30,7 @@ std::atomic<void*> o_sendto{ nullptr };
 std::atomic<void*> p_GetActive{ nullptr };
 std::atomic<void*> p_StringNew{ nullptr };
 std::atomic<void*> p_ShowDialog{ nullptr };
+std::atomic<void*> o_BuildCmdBuffers{ nullptr };
 
 std::atomic<bool> g_RequestReloadPopup{ false };
 std::atomic<bool> g_GameUpdateInit{ false };

@@ -155,5 +155,8 @@ namespace Config {
         g_Config.rainbow_fixed_color_idx = ReadInt("RainbowFixedColorIdx", 0, file);
 
         g_Config.disable_underwater_mask = ReadInt("DisableUnderwaterMask", 0, file);
+
+        g_Config.enable_low_render_scale = ReadInt("LowRenderScale", 0, file);
+        g_Config.render_scale_value = ReadFloat("RenderScaleValue", 1.00f, file);
     }
 }

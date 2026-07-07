@@ -72,6 +72,9 @@ struct ModConfig {
     int rainbow_fixed_color_idx = 0;
 
     bool disable_underwater_mask = false;
+
+    bool enable_low_render_scale = false;
+    float render_scale_value = 1.00f;
 };
 
 namespace Config {

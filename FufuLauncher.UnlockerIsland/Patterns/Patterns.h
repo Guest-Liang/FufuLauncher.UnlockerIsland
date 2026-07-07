@@ -38,7 +38,6 @@ namespace Patterns {
     inline constexpr const char* ExpHashCmp    = "81 F9 E1 73 90 69 0F 85";
     inline constexpr const char* ExpTailJmp    = "41 5F E9";
     inline constexpr const char* ExpTestJz     = "84 C0 0F 84";
-    inline constexpr const char* BuildCmdBuffers = "41 57 41 56 41 55 41 54 56 57 55 53 48 81 EC 48 02 00 00 48 89 CE 0F 57 C0 0F 29 84 24 50 01 00 00 0F 29 84 24 40 01 00 00 0F 29 84 24 30 01 00";
     inline constexpr const char* CameraUpdateView = "56 48 83 EC 40 0F 29 7C 24 30 0F 29 74 24 20 48 89 CE F3 0F 10 71 70 F3 0F 10 79 78 F3 0F 5C F7 F3 0F 59 B1 80 00 00 00 E8 ?";
     inline constexpr const char* CameraStateBlenderTick = "41 57 41 56 41 55 41 54 56 57 55 53 48 81 EC 38 0D 00 00 44 0F 29 84 24 20 0D 00 00";
     inline constexpr const char* UnderwaterMaskPreMain = "41 56 56 57 55 53 48 81 EC F0 04 00 00";
@@ -63,6 +62,7 @@ namespace Patterns {
         inline constexpr const char* DamageColor2 = "12422F40";
         inline constexpr const char* DamageColor3 = "12423B70";
         inline constexpr const char* DamageColor4 = "12422ED0";
+        inline constexpr const char* BuildCmdBuffersOffset = "6812110";
     }
 
     namespace OS {
@@ -110,6 +110,7 @@ namespace Offsets {
     extern std::string DamageColor2Offset;
     extern std::string DamageColor3Offset;
     extern std::string DamageColor4Offset;
+    extern std::string BuildCmdBuffersOffset;
 
     void InitOffsets(bool isOS);
 }

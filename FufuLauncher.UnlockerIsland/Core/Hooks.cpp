@@ -90,6 +90,15 @@ static uintptr_t ResolveAddress(uintptr_t addr) {
     return addr;
 }
 
+static void __fastcall hk_BuildCmdBuffers(void* pThis) {
+    if (Config::Get().enable_low_render_scale) {
+        constexpr uintptr_t kScaleOffset = 0x88;
+        *(float*)((uintptr_t)pThis + kScaleOffset) = Config::Get().render_scale_value;
+    }
+    auto orig = (tBuildCmdBuffers)o_BuildCmdBuffers.load();
+    if (orig) orig(pThis);
+}
+
 static void* GetGetActiveAddr() {
     HMODULE hMod = GetModuleHandle(NULL);
     if (!hMod) return nullptr;
@@ -582,6 +591,22 @@ bool Hooks::Init() {
     }
 
     UnderwaterMask::Init();
+    
+    if (!isOS && Config::Get().enable_low_render_scale) {
+        uintptr_t offsetBuildCmd = StringToAddr(Offsets::BuildCmdBuffersOffset);
+        if (offsetBuildCmd) {
+            void* buildCmdAddr = (void*)((uintptr_t)GetModuleHandle(NULL) + offsetBuildCmd);
+            LogOffset("BuildCmdBuffers", buildCmdAddr, buildCmdAddr);
+            std::cout << "[SCAN] BuildCmdBuffers resolved via offset at: 0x" << std::hex << offsetBuildCmd << std::dec << std::endl;
+            if (MH_CreateHook(buildCmdAddr, (void*)hk_BuildCmdBuffers, (void**)&o_BuildCmdBuffers) == MH_OK) {
+                std::cout << "   -> BuildCmdBuffers Hook Ready (CN)." << std::endl;
+            } else {
+                std::cout << "   -> [ERR] BuildCmdBuffers MH_CreateHook Failed." << std::endl;
+            }
+        } else {
+            std::cout << "[ERR] BuildCmdBuffers offset is missing." << std::endl;
+        }
+    }
 
     if (MH_EnableHook(MH_ALL_HOOKS) != MH_OK) {
         std::cout << "[SCAN] MH_EnableHook Failed!" << '\n';

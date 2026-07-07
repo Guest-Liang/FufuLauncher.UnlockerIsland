@@ -55,6 +55,8 @@ typedef void (*FnShowDialog)(__int64, __int64, __int64, __int64, int);
 typedef void (__fastcall *tButtonClicked)(void*);
 typedef void (__fastcall *tClockPageBack)(void*, void*);
 
+typedef void (*tBuildCmdBuffers)(void*);
+
 extern std::atomic<void*> o_GetFrameCount;
 extern std::atomic<void*> o_SetFrameCount;
 extern std::atomic<void*> o_ChangeFov;
@@ -85,6 +87,7 @@ extern std::atomic<void*> o_sendto;
 extern std::atomic<void*> p_GetActive;
 extern std::atomic<void*> p_StringNew;
 extern std::atomic<void*> p_ShowDialog;
+extern std::atomic<void*> o_BuildCmdBuffers;
 
 extern std::atomic<bool> g_RequestReloadPopup;
 extern std::atomic<bool> g_GameUpdateInit;
