@@ -26,6 +26,16 @@
 #include <sstream>
 
 #pragma comment(lib, "d3d11.lib")
+
+static void TryInitTouchScreen() {
+    auto sw = (tSwitchInput)p_SwitchInput.load();
+    if (IsValid(sw)) {
+        g_TouchScreenInit.store(true);
+        __try {
+            sw(nullptr);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {}
+    }
+}
 #pragma comment(lib, "MinHook/libMinHook.x64.lib")
 #pragma comment(lib, "ws2_32.lib")
 
@@ -368,12 +378,9 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
         if (IsValid(setSync)) SafeInvoke([&]() { setSync(false); });
     }
 
-    std::call_once(g_TouchInitOnce, [&]() {
-        if (cfg.use_touch_screen) {
-            auto sw = (tSwitchInput)p_SwitchInput.load();
-            if (IsValid(sw)) SafeInvoke([&]() { sw(nullptr); });
-        }
-    });
+    if (!g_TouchScreenInit.load() && g_GameUpdateInit.load() && cfg.use_touch_screen) {
+        TryInitTouchScreen();
+    }
 
     if (cfg.enable_fps_override) {
         auto setFps = (tSetFrameCount)o_SetFrameCount.load();

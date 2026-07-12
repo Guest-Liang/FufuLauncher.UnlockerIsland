@@ -35,7 +35,7 @@ std::atomic<void*> o_BuildCmdBuffers{ nullptr };
 std::atomic<bool> g_RequestReloadPopup{ false };
 std::atomic<bool> g_GameUpdateInit{ false };
 std::atomic<bool> g_RequestCraft{ false };
-std::once_flag g_TouchInitOnce;
+std::atomic<bool> g_TouchScreenInit{ false };
 
 unsigned char originalCheckCanOpenMapBytes[5] = {0};
 ID3D11DeviceContext* g_pd3dContext = nullptr;

@@ -92,7 +92,7 @@ extern std::atomic<void*> o_BuildCmdBuffers;
 extern std::atomic<bool> g_RequestReloadPopup;
 extern std::atomic<bool> g_GameUpdateInit;
 extern std::atomic<bool> g_RequestCraft;
-extern std::once_flag g_TouchInitOnce;
+extern std::atomic<bool> g_TouchScreenInit;
 
 extern unsigned char originalCheckCanOpenMapBytes[5];
 extern ID3D11DeviceContext* g_pd3dContext;
