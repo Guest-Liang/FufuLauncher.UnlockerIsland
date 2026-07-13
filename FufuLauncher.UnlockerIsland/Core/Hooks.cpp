@@ -15,6 +15,7 @@
 #include "../Network/Network.h"
 #include "../Visual/Visual.h"
 #include "../UnderwaterMask/UnderwaterMask.h"
+#include "../FreeCamera/FreeCamera.h"
 #include <iostream>
 #include <atomic>
 #include <mutex>
@@ -393,7 +394,9 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
     }
 
     auto orig = (tChangeFov)o_ChangeFov.load();
-    return orig ? orig(__this, value) : 0;
+    int32_t ret = orig ? orig(__this, value) : 0;
+    FreeCamera::Tick();
+    return ret;
 }
 
 bool Hooks::Init() {
@@ -598,6 +601,8 @@ bool Hooks::Init() {
     }
 
     UnderwaterMask::Init();
+
+    FreeCamera::Init();
     
     if (!isOS && Config::Get().enable_low_render_scale) {
         uintptr_t offsetBuildCmd = StringToAddr(Offsets::BuildCmdBuffersOffset);

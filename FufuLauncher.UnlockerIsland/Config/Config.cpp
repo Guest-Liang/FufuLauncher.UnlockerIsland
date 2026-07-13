@@ -170,5 +170,12 @@ namespace Config {
 
         g_Config.enable_low_render_scale = ReadInt("LowRenderScale", 0, file);
         g_Config.render_scale_value = ReadFloat("RenderScaleValue", 1.00f, file);
+
+        g_Config.enable_free_cam = ReadInt("EnableFreeCam", 0, file);
+        g_Config.free_cam_key = ReadInt("FreeCamKey", VK_INSERT, file);
+        g_Config.free_cam_lock_key = ReadInt("FreeCamLockKey", VK_DELETE, file);
+        g_Config.free_cam_move_speed = ReadFloat("FreeCamMoveSpeed", 8.0f, file);
+        g_Config.free_cam_sprint_mult = ReadFloat("FreeCamSprintMult", 3.0f, file);
+        g_Config.free_cam_mouse_sensitivity = ReadFloat("FreeCamMouseSensitivity", 0.12f, file);
     }
 }
