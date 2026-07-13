@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <sstream>
 #include <vector>
+#include <algorithm>
 
 #pragma comment(lib, "shlwapi.lib")
 
@@ -31,7 +32,6 @@ std::wstring GetCurrentExeDirectory() {
     }
     return L".";
 }
-
 
 std::wstring GetLogFilePath() {
     return GetCurrentExeDirectory() + L"\\Launcher.log";
@@ -92,7 +92,8 @@ bool InjectDll(HANDLE hProcess, const std::wstring& dllPath) {
     return exitCode != 0;
 }
 
-std::wstring ExtractDllFromIni(const std::wstring& iniPath) {
+std::vector<std::wstring> ExtractDllsFromIni(const std::wstring& iniPath) {
+    std::vector<std::wstring> dllList;
     std::ifstream file(iniPath);
     std::string line;
     while (std::getline(file, line)) {
@@ -122,13 +123,23 @@ std::wstring ExtractDllFromIni(const std::wstring& iniPath) {
                         int size_needed = MultiByteToWideChar(CP_UTF8, 0, &value[0], (int)value.size(), NULL, 0);
                         std::wstring wstrTo(size_needed, 0);
                         MultiByteToWideChar(CP_UTF8, 0, &value[0], (int)value.size(), &wstrTo[0], size_needed);
-                        return wstrTo;
+                        
+                        bool exists = false;
+                        for (const auto& existingDll : dllList) {
+                            if (_wcsicmp(existingDll.c_str(), wstrTo.c_str()) == 0) {
+                                exists = true;
+                                break;
+                            }
+                        }
+                        if (!exists) {
+                            dllList.push_back(wstrTo);
+                        }
                     }
                 }
             }
         }
     }
-    return L"";
+    return dllList;
 }
 
 void RecursiveScanAndInject(HANDLE hProcess, const std::wstring& directory, int& injectedCount) {
@@ -148,20 +159,25 @@ void RecursiveScanAndInject(HANDLE hProcess, const std::wstring& directory, int&
             RecursiveScanAndInject(hProcess, fullPath, injectedCount);
         } else {
             if (_wcsicmp(findData.cFileName, L"config.ini") == 0) {
-                std::wstring targetDllName = ExtractDllFromIni(fullPath);
+                std::vector<std::wstring> targetDllNames = ExtractDllsFromIni(fullPath);
                 
-                if (!targetDllName.empty()) {
-                    std::wstring targetDllPath = directory + L"\\" + targetDllName;
-                    
-                    if (GetFileAttributesW(targetDllPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
-                        std::string sFileName = WStringToString(targetDllName);
-                        WriteLog("发现配置文件指向的插件: " + sFileName + "，正在注入...");
+                for (const std::wstring& targetDllName : targetDllNames) {
+                    if (!targetDllName.empty()) {
+                        std::wstring targetDllPath = directory + L"\\" + targetDllName;
+                        
+                        if (GetFileAttributesW(targetDllPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+                            std::string sFileName = WStringToString(targetDllName);
+                            WriteLog("发现配置文件指向的插件: " + sFileName + "，正在注入...");
 
-                        if (InjectDll(hProcess, targetDllPath)) {
-                            WriteLog("插件注入成功: " + sFileName);
-                            injectedCount++;
+                            if (InjectDll(hProcess, targetDllPath)) {
+                                WriteLog("插件注入成功: " + sFileName);
+                                injectedCount++;
+                            } else {
+                                WriteLog("错误: 插件注入失败: " + sFileName);
+                            }
                         } else {
-                            WriteLog("错误: 插件注入失败: " + sFileName);
+                            std::string sFileName = WStringToString(targetDllName);
+                            WriteLog("警告: 配置文件指向的插件文件不存在: " + sFileName);
                         }
                     }
                 }
