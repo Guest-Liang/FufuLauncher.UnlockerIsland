@@ -7,7 +7,6 @@
 #include <iomanip>
 #include <sstream>
 #include <vector>
-#include <algorithm>
 
 #pragma comment(lib, "shlwapi.lib")
 
@@ -55,7 +54,7 @@ void HideConsole() {
     if (hwnd != NULL) ShowWindow(hwnd, SW_HIDE);
 }
 
-bool InjectDll(HANDLE hProcess, const std::wstring& dllPath) {
+bool InjectDll(HANDLE hProcess, HANDLE hThread, const std::wstring& dllPath) {
     if (GetFileAttributesW(dllPath.c_str()) == INVALID_FILE_ATTRIBUTES) return false;
 
     std::wstring injectPath = dllPath;
@@ -77,19 +76,17 @@ bool InjectDll(HANDLE hProcess, const std::wstring& dllPath) {
     }
 
     LPTHREAD_START_ROUTINE loadLibrary = (LPTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "LoadLibraryW");
-    HANDLE hThread = CreateRemoteThread(hProcess, nullptr, 0, loadLibrary, remoteMem, 0, nullptr);
-    if (!hThread) {
+    
+    // 使用 QueueUserAPC 代替 CreateRemoteThread，确保在进程解除挂起后安全加载
+    if (QueueUserAPC((PAPCFUNC)loadLibrary, hThread, (ULONG_PTR)remoteMem) == 0) {
         VirtualFreeEx(hProcess, remoteMem, 0, MEM_RELEASE);
         return false;
     }
 
-    WaitForSingleObject(hThread, INFINITE);
-    DWORD exitCode = 0;
-    GetExitCodeThread(hThread, &exitCode);
-    VirtualFreeEx(hProcess, remoteMem, 0, MEM_RELEASE);
-    CloseHandle(hThread);
-
-    return exitCode != 0;
+    // 关键修正：此处禁止调用 VirtualFreeEx。
+    // 由于 QueueUserAPC 是异步执行，目标进程将在 ResumeThread 之后读取此内存，
+    // 若提前释放，会导致读取失效内存从而触发访问冲突。
+    return true;
 }
 
 std::vector<std::wstring> ExtractDllsFromIni(const std::wstring& iniPath) {
@@ -142,7 +139,7 @@ std::vector<std::wstring> ExtractDllsFromIni(const std::wstring& iniPath) {
     return dllList;
 }
 
-void RecursiveScanAndInject(HANDLE hProcess, const std::wstring& directory, int& injectedCount) {
+void RecursiveScanAndInject(HANDLE hProcess, HANDLE hThread, const std::wstring& directory, int& injectedCount) {
     std::wstring searchPath = directory + L"\\*";
     WIN32_FIND_DATAW findData;
     HANDLE hFind = FindFirstFileW(searchPath.c_str(), &findData);
@@ -156,7 +153,7 @@ void RecursiveScanAndInject(HANDLE hProcess, const std::wstring& directory, int&
         std::wstring fullPath = directory + L"\\" + findData.cFileName;
 
         if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            RecursiveScanAndInject(hProcess, fullPath, injectedCount);
+            RecursiveScanAndInject(hProcess, hThread, fullPath, injectedCount);
         } else {
             if (_wcsicmp(findData.cFileName, L"config.ini") == 0) {
                 std::vector<std::wstring> targetDllNames = ExtractDllsFromIni(fullPath);
@@ -167,13 +164,13 @@ void RecursiveScanAndInject(HANDLE hProcess, const std::wstring& directory, int&
                         
                         if (GetFileAttributesW(targetDllPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
                             std::string sFileName = WStringToString(targetDllName);
-                            WriteLog("发现配置文件指向的插件: " + sFileName + "，正在注入...");
+                            WriteLog("发现配置文件指向的插件: " + sFileName + "，正在配置注入...");
 
-                            if (InjectDll(hProcess, targetDllPath)) {
-                                WriteLog("插件注入成功: " + sFileName);
+                            if (InjectDll(hProcess, hThread, targetDllPath)) {
+                                WriteLog("插件已加入加载队列: " + sFileName);
                                 injectedCount++;
                             } else {
-                                WriteLog("错误: 插件注入失败: " + sFileName);
+                                WriteLog("错误: 插件排队失败: " + sFileName);
                             }
                         } else {
                             std::string sFileName = WStringToString(targetDllName);
@@ -188,7 +185,7 @@ void RecursiveScanAndInject(HANDLE hProcess, const std::wstring& directory, int&
     FindClose(hFind);
 }
 
-void InjectPlugins(HANDLE hProcess) {
+void InjectPlugins(HANDLE hProcess, HANDLE hThread) {
     std::wstring exeDir = GetCurrentExeDirectory();
     std::wstring pluginsDir = exeDir + L"\\" + PLUGINS_SUBDIR_NAME;
 
@@ -210,9 +207,9 @@ void InjectPlugins(HANDLE hProcess) {
     WriteLog("正在递归扫描插件目录寻找 config.ini: " + WStringToString(pluginsDir));
 
     int totalInjected = 0;
-    RecursiveScanAndInject(hProcess, pluginsDir, totalInjected);
+    RecursiveScanAndInject(hProcess, hThread, pluginsDir, totalInjected);
 
-    WriteLog("插件加载完成，共注入: " + std::to_string(totalInjected) + " 个插件");
+    WriteLog("插件加载排队完成，共计划注入: " + std::to_string(totalInjected) + " 个插件");
 }
 
 int wmain(int argc, wchar_t* argv[]) {
@@ -261,14 +258,14 @@ int wmain(int argc, wchar_t* argv[]) {
         return 1;
     }
 
-    WriteLog("游戏进程创建成功，开始注入插件...");
+    WriteLog("游戏挂起进程创建成功，开始配置插件注入队列...");
     
-    InjectPlugins(pi.hProcess);
+    InjectPlugins(pi.hProcess, pi.hThread);
 
     ResumeThread(pi.hThread);
     CloseHandle(pi.hThread);
     CloseHandle(pi.hProcess);
 
-    WriteLog("=== 游戏已启动并完成注入流程 ===");
+    WriteLog("=== 游戏主线程已恢复并执行注入任务 ===");
     return 0;
 }
