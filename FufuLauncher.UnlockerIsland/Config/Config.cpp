@@ -171,6 +171,12 @@ namespace Config {
         g_Config.enable_low_render_scale = ReadInt("LowRenderScale", 0, file);
         g_Config.render_scale_value = ReadFloat("RenderScaleValue", 1.00f, file);
 
+        if (g_Config.render_scale_value < 0.01f) {
+            g_Config.render_scale_value = 0.01f;
+        } else if (g_Config.render_scale_value > 3.00f) {
+            g_Config.render_scale_value = 3.00f;
+        }
+
         g_Config.enable_free_cam = ReadInt("EnableFreeCam", 0, file);
         g_Config.free_cam_key = ReadInt("FreeCamKey", VK_INSERT, file);
         g_Config.free_cam_lock_key = ReadInt("FreeCamLockKey", VK_DELETE, file);
